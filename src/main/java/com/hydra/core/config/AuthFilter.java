@@ -24,14 +24,19 @@ public class AuthFilter extends OncePerRequestFilter {
 			@NonNull FilterChain filterChain) throws ServletException, IOException {
 		String authorizationHeader = request.getHeader("Authorization");
 
-		if (ValidationUtils.isEmpty(authorizationHeader)) {
+		if (authorizationHeader.equals(PUBLIC_TOKEN)) {
+			filterChain.doFilter(request, response);
+			return;
+		}
+
+		if (ValidationUtils.isEmpty(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
 			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
 			return;
 		}
 
 		String token = authorizationHeader.substring(7).trim();
 
-		if (ValidationUtils.notEmpty(token) && (token.equals(PUBLIC_TOKEN) || JwtUtils.validateToken(token))) {
+		if (ValidationUtils.notEmpty(token) && JwtUtils.validateToken(token)) {
 			filterChain.doFilter(request, response);
 		} else {
 			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
@@ -48,6 +53,7 @@ public class AuthFilter extends OncePerRequestFilter {
 			return true;
 
 		List<String> startsWithPaths = new ArrayList<>();
+		startsWithPaths.add("/auth");
 		startsWithPaths.add("/swagger-ui");
 		startsWithPaths.add("/v3/api-docs");
 
