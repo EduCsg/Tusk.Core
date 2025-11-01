@@ -13,17 +13,21 @@ public class UserEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
+	@Column(name = "id", nullable = false, unique = true, length = 36, updatable = false)
 	private String id;
 
+	@Column(nullable = false, length = 100)
 	private String name;
 
-	@Column(unique = true)
+	@Column(unique = true, nullable = false, length = 100)
 	private String email;
 
-	@Column(unique = true)
+	@Column(unique = true, nullable = false, length = 50)
 	private String username;
 
+	@Column(nullable = false, length = 255)
 	private String password;
+
 	private LocalDateTime updatedAt;
 	private LocalDateTime createdAt;
 
