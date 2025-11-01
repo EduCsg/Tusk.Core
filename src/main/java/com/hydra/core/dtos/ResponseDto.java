@@ -14,7 +14,7 @@ public class ResponseDto {
 
 	private String message;
 	private Object data;
-	private Boolean success;
+	private boolean success;
 
 	public ResponseDto(String message) {
 		this.message = message;

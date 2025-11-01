@@ -4,42 +4,60 @@ import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.UserDto;
 import com.hydra.core.entity.RoleEntity;
 import com.hydra.core.entity.UserEntity;
+import com.hydra.core.enums.RoleEnums;
+import com.hydra.core.repository.RoleRepository;
 import com.hydra.core.repository.UserRepository;
 import com.hydra.core.utils.BCrypt;
 import com.hydra.core.utils.JwtUtils;
+import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
-public class UserService {
+public class AuthService {
 
-	private static UserRepository userRepository;
+	private final UserRepository userRepository;
+	private final RoleRepository roleRepository;
+
 	ModelMapper mapper = new ModelMapper();
 
 	{
 		mapper.getConfiguration().setFieldMatchingEnabled(true).setFieldAccessLevel(Configuration.AccessLevel.PRIVATE);
 	}
 
-	public UserService(UserRepository userRepository) {
-		UserService.userRepository = userRepository;
+	public AuthService(UserRepository userRepository, RoleRepository roleRepository) {
+		this.userRepository = userRepository;
+		this.roleRepository = roleRepository;
 	}
 
+	@Transactional
 	public ResponseEntity<ResponseDto> registerUser(UserDto userDto) {
 		ResponseDto responseDto = new ResponseDto();
-		boolean alreadyExists = userRepository.findByEmailOrUsername(userDto.email(), userDto.username()).isPresent();
+		Optional<UserEntity> existingUser = userRepository.findByEmailOrUsername(userDto.email(), userDto.username());
 
-		if (alreadyExists) {
-			responseDto.setMessage("User with given email or username already exists");
+		if (existingUser.isPresent()) {
+			String message = existingUser.get().getEmail().equals(userDto.email())
+					? "O email já está em uso!"
+					: "O nome de usuário já está em uso!";
+
+			responseDto.setMessage(message);
 			responseDto.setSuccess(false);
 			return ResponseEntity.badRequest().body(responseDto);
 		}
 
 		UserEntity userEntity = mapper.map(userDto, UserEntity.class);
 		userEntity.setPassword(BCrypt.hashpw(userDto.password()));
+
+		RoleEntity defaultRoleEntity = roleRepository.findById(RoleEnums.ATHLETE.getId())
+													 .orElseThrow(() -> new RuntimeException("Default role not found"));
+		userEntity.setRoles(Set.of(defaultRoleEntity));
+
 		userRepository.save(userEntity);
 
 		responseDto.setMessage("User registered successfully");
@@ -47,6 +65,7 @@ public class UserService {
 		return ResponseEntity.ok(responseDto);
 	}
 
+	@Transactional
 	public ResponseEntity<ResponseDto> loginUser(UserDto userDto) {
 		ResponseDto responseDto = new ResponseDto();
 		var userOpt = userRepository.findByEmailOrUsername(userDto.email(), userDto.username());

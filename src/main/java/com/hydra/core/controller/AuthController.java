@@ -2,7 +2,7 @@ package com.hydra.core.controller;
 
 import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.UserDto;
-import com.hydra.core.service.UserService;
+import com.hydra.core.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("auth")
 public class AuthController {
 
-	private final UserService userService;
+	private final AuthService userService;
 
-	public AuthController(UserService userService) {
+	public AuthController(AuthService userService) {
 		this.userService = userService;
 	}
 
