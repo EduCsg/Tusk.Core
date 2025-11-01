@@ -1,0 +1,12 @@
+-- Seed Roles
+INSERT INTO roles (id, name)
+SELECT 'f7ece7f5-aa85-453a-b27b-3d7ef3b4e828', 'ROLE_ADMIN'
+    WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'ROLE_ADMIN');
+
+INSERT INTO roles (id, name)
+SELECT '0fc2c5e2-5184-47e1-acb9-b7ac8852f4f2', 'ROLE_COACH'
+    WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'ROLE_COACH');
+
+INSERT INTO roles (id, name)
+SELECT '09d62575-0c5b-439d-ad99-95e4d0e50375', 'ROLE_ATHLETE'
+    WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'ROLE_ATHLETE');
