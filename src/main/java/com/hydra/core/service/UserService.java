@@ -2,13 +2,17 @@ package com.hydra.core.service;
 
 import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.UserDto;
+import com.hydra.core.entity.RoleEntity;
 import com.hydra.core.entity.UserEntity;
 import com.hydra.core.repository.UserRepository;
 import com.hydra.core.utils.BCrypt;
+import com.hydra.core.utils.JwtUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class UserService {
@@ -60,8 +64,15 @@ public class UserService {
 			return ResponseEntity.status(401).body(responseDto);
 		}
 
+		List<String> roles = userEntity.getRoles().stream().map(RoleEntity::getName).toList();
+
+		String jwtToken = JwtUtils.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
+				userEntity.getName(), roles);
+
 		responseDto.setMessage("Login successful");
+		responseDto.setData(jwtToken);
 		responseDto.setSuccess(true);
+
 		return ResponseEntity.ok(responseDto);
 	}
 
