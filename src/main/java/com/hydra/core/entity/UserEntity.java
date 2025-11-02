@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Data
 @Entity
@@ -25,18 +24,14 @@ public class UserEntity {
 	@Column(unique = true, nullable = false, length = 50)
 	private String username;
 
-	@Column(nullable = false, length = 255)
+	@Column(nullable = false)
 	private String password;
+
+	@Column(nullable = false, length = 20)
+	private String role;
 
 	private LocalDateTime updatedAt;
 	private LocalDateTime createdAt;
-
-	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "users_roles", //
-			joinColumns = @JoinColumn(name = "user_id"), //
-			inverseJoinColumns = @JoinColumn(name = "role_id") //
-	)
-	private Set<RoleEntity> roles;
 
 	@PrePersist
 	private void prePersist() {

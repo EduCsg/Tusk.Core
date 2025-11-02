@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
-import java.util.List;
 
 @Component
 public class JwtUtils {
@@ -25,14 +24,14 @@ public class JwtUtils {
 		jwtSecret = Keys.hmacShaKeyFor(key.getBytes());
 	}
 
-	public static String generateToken(String userId, String username, String email, String name, List<String> roles) {
+	public static String generateToken(String userId, String username, String email, String name, String role) {
 		return Jwts.builder() //
 				   .subject(username) //
 				   .claim("userId", userId) //
 				   .claim("username", username) //
 				   .claim("email", email) //
 				   .claim("name", name) //
-				   .claim("roles", roles) //
+				   .claim("role", role) //
 				   .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 6)) // 6 hours
 				   .signWith(jwtSecret) //
 				   .compact();
@@ -57,17 +56,9 @@ public class JwtUtils {
 		String username = payload.get("username").toString();
 		String email = payload.get("email").toString();
 		String name = payload.get("name").toString();
-		String roles = payload.get("roles").toString();
+		String role = payload.get("role").toString();
 
-		System.out.println(payload);
-
-		return new UserDto(userId, token, username, email, name, roles);
-	}
-
-	@SuppressWarnings("unchecked")
-	public static List<String> getRolesByToken(String token) {
-		Claims payload = Jwts.parser().verifyWith(jwtSecret).build().parseSignedClaims(token).getPayload();
-		return payload.get("roles", List.class);
+		return new UserDto(userId, token, username, name, email, null, role);
 	}
 
 }

@@ -1,12 +1,10 @@
 package com.hydra.core.service;
 
 import com.hydra.core.dtos.ResponseDto;
-import com.hydra.core.dtos.UpdateUserRolesDto;
+import com.hydra.core.dtos.UpdateGlobalRoleDto;
 import com.hydra.core.dtos.UserDto;
-import com.hydra.core.entity.RoleEntity;
 import com.hydra.core.entity.UserEntity;
 import com.hydra.core.enums.RoleEnums;
-import com.hydra.core.repository.RoleRepository;
 import com.hydra.core.repository.UserRepository;
 import com.hydra.core.utils.JwtUtils;
 import com.hydra.core.utils.ValidationUtils;
@@ -16,26 +14,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-
 @Service
 public class AdminService {
 
 	private final UserRepository userRepository;
-	private final RoleRepository roleRepository;
 
-	public AdminService(UserRepository userRepository, RoleRepository roleRepository) {
+	public AdminService(UserRepository userRepository) {
 		this.userRepository = userRepository;
-		this.roleRepository = roleRepository;
 	}
 
 	@Transactional
-	public ResponseEntity<ResponseDto> updateUserRoles(String headers, UpdateUserRolesDto dto) {
+	public ResponseEntity<ResponseDto> updateGlobalRole(String headers, UpdateGlobalRoleDto dto) {
 
-		List<String> roleIds = dto.roleIds();
-		boolean isRolesEmpty = ValidationUtils.isEmpty(roleIds) || roleIds.stream().anyMatch(ValidationUtils::isEmpty);
-
-		if (ValidationUtils.isEmpty(dto.userId()) || isRolesEmpty)
+		if (ValidationUtils.isEmpty(dto.userId()) || ValidationUtils.isEmpty(dto.role()))
 			return ResponseEntity.badRequest().body(new ResponseDto(
 					"É necessário informar o ID do usuário e as roles a serem atribuídas."));
 
@@ -54,10 +45,7 @@ public class AdminService {
 		UserEntity requestingUser = userRepository.findById(userRequesterFromToken.id()).orElseThrow(
 				() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado"));
 
-		boolean isAdmin = requestingUser.getRoles().stream().map(RoleEntity::getId)
-										.anyMatch(role -> role.equals(RoleEnums.ADMIN.getId()));
-
-		if (!isAdmin) {
+		if (!requestingUser.getRole().equals(RoleEnums.ROLE_ADMIN.name())) {
 			return ResponseEntity.status(403).body(new ResponseDto(
 					"Você não tem permissão para atualizar as roles de outros usuários"));
 		}
@@ -66,27 +54,25 @@ public class AdminService {
 				() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário não encontrado"));
 
 		boolean isSelfUpdate = targetUser.getId().equals(requestingUser.getId());
-		boolean targetIsAdmin = targetUser.getRoles().stream().map(RoleEntity::getId)
-										  .anyMatch(role -> role.equals(RoleEnums.ADMIN.getId()));
+		boolean targetIsAdmin = targetUser.getRole().equals(RoleEnums.ROLE_ADMIN.name());
 
 		if (targetIsAdmin && !isSelfUpdate) {
 			return ResponseEntity.badRequest()
 								 .body(new ResponseDto("Você não pode modificar as roles de outro administrador"));
 		}
 
-		List<RoleEntity> newRoles = roleRepository.findAllById(dto.roleIds());
-		if (ValidationUtils.isEmpty(newRoles))
-			return ResponseEntity.badRequest()
-								 .body(new ResponseDto("Nenhuma role válida foi encontrada para atribuir ao usuário"));
+		try {
+			RoleEnums.valueOf(dto.role());
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().body(new ResponseDto("A role informada é inválida"));
+		}
 
-		targetUser.getRoles().clear();
-		targetUser.getRoles().addAll(newRoles);
+		targetUser.setRole(dto.role());
 		userRepository.save(targetUser);
 
 		ResponseDto responseDto = new ResponseDto();
 		responseDto.setSuccess(true);
-		responseDto.setMessage("As roles do usuário foram atualizadas com sucesso!");
-		responseDto.setData(targetUser.getRoles().stream().map(RoleEntity::getName).toList());
+		responseDto.setMessage("A role global do usuário foi atualizada com sucesso!");
 
 		return ResponseEntity.ok(responseDto);
 	}

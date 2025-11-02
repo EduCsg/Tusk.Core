@@ -1,7 +1,7 @@
 package com.hydra.core.controller;
 
 import com.hydra.core.dtos.ResponseDto;
-import com.hydra.core.dtos.UpdateUserRolesDto;
+import com.hydra.core.dtos.UpdateGlobalRoleDto;
 import com.hydra.core.service.AdminService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,11 +17,11 @@ public class AdminController {
 		this.adminService = adminService;
 	}
 
-	@PutMapping("update-user-roles")
+	@PutMapping("update-global-user-role")
 	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<ResponseDto> updateUserRoles(@RequestHeader String Authorization,
-			@RequestBody UpdateUserRolesDto dto) {
-		return adminService.updateUserRoles(Authorization, dto);
+	public ResponseEntity<ResponseDto> updateGlobalRole(@RequestHeader String Authorization,
+			@RequestBody UpdateGlobalRoleDto dto) {
+		return adminService.updateGlobalRole(Authorization, dto);
 	}
 
 }
