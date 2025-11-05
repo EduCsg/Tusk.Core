@@ -12,7 +12,7 @@ CREATE TABLE teams_athletes
     athlete_id VARCHAR(36) NOT NULL,
     team_id    VARCHAR(36) NOT NULL,
     invited_by VARCHAR(36),
-    invited_at TIMESTAMP,
+    joined_at  TIMESTAMP,
     CONSTRAINT fk_teams_athletes_athlete FOREIGN KEY (athlete_id) REFERENCES users (id),
     CONSTRAINT fk_teams_athletes_invited_by FOREIGN KEY (invited_by) REFERENCES users (id),
     CONSTRAINT fk_teams_athletes_team FOREIGN KEY (team_id) REFERENCES teams (id),

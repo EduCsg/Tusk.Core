@@ -27,11 +27,12 @@ public class TeamAthleteEntity {
 	@JoinColumn(name = "invited_by")
 	private UserEntity invitedBy;
 
-	private LocalDateTime invitedAt;
+	@Column(name = "joined_at", nullable = false)
+	private LocalDateTime joinedAt;
 
 	@PrePersist
 	private void prePersist() {
-		this.invitedAt = LocalDateTime.now();
+		this.joinedAt = LocalDateTime.now();
 	}
 
 }

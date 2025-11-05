@@ -24,4 +24,10 @@ public class TeamController {
 		return inviteService.createInviteToken(authorization, teamId, request);
 	}
 
+	@PostMapping("invite/accept/{inviteToken}")
+	public ResponseEntity<ResponseDto> acceptInviteToken(@RequestHeader("Authorization") String authorization,
+			@PathVariable String inviteToken) {
+		return inviteService.acceptInviteToken(authorization, inviteToken);
+	}
+
 }

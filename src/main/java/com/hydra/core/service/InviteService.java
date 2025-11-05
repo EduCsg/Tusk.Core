@@ -1,5 +1,6 @@
 package com.hydra.core.service;
 
+import com.hydra.core.dtos.InviteTokenDto;
 import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.TeamInviteRequestDto;
 import com.hydra.core.dtos.UserDto;
@@ -12,6 +13,7 @@ import com.hydra.core.repository.TeamRepository;
 import com.hydra.core.repository.UserRepository;
 import com.hydra.core.utils.JwtUtils;
 import com.hydra.core.utils.ValidationUtils;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +45,8 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
-		UserDto userByToken = JwtUtils.parseTokenToUser(authorization.substring(7));
+		String token = JwtUtils.extractTokenFromHeader(authorization);
+		UserDto userByToken = JwtUtils.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || !userByToken.id().equals(request.coachId())) {
 			responseDto.setMessage("Token inválido ou usuário não autorizado!");
@@ -95,6 +98,68 @@ public class InviteService {
 		teamAthlete.setId(id);
 
 		teamAthleteRepository.save(teamAthlete);
+
+		return ResponseEntity.ok(responseDto);
+	}
+
+	@Transactional
+	public ResponseEntity<ResponseDto> acceptInviteToken(String authorization, String inviteToken) {
+		ResponseDto responseDto = new ResponseDto();
+
+		if (ValidationUtils.isEmpty(inviteToken)) {
+			responseDto.setMessage("Token de convite é obrigatório!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
+		String token = JwtUtils.extractTokenFromHeader(authorization);
+		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+
+		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
+			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+		}
+
+		InviteTokenDto inviteData = JwtUtils.parseInviteToken(inviteToken);
+
+		if (ValidationUtils.isEmpty(inviteData)) {
+			responseDto.setMessage("Token de convite inválido!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
+		if (!userByToken.id().equals(inviteData.athleteId())) {
+			responseDto.setMessage("Você não pode aceitar esse convite!");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+		}
+
+		Optional<TeamAthleteEntity> alreadyExists = teamAthleteRepository.findById(
+				new TeamAthleteId(inviteData.teamId(), inviteData.athleteId()));
+
+		if (alreadyExists.isPresent()) {
+			String teamName = alreadyExists.get().getTeam().getName();
+			responseDto.setMessage("Você já faz parte da equipe " + teamName + "!");
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(responseDto);
+		}
+
+		TeamAthleteEntity newTeamAthlete = new TeamAthleteEntity();
+
+		TeamEntity team = teamRepository.findById(inviteData.teamId())
+										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
+		UserEntity athlete = userRepository.findById(inviteData.athleteId())
+										   .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado"));
+		UserEntity coach = userRepository.findById(inviteData.coachId())
+										 .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado"));
+
+		TeamAthleteId newTeamAthleteId = new TeamAthleteId(team.getTeamId(), athlete.getId());
+		newTeamAthlete.setId(newTeamAthleteId);
+
+		newTeamAthlete.setTeam(team);
+		newTeamAthlete.setAthlete(athlete);
+		newTeamAthlete.setInvitedBy(coach);
+
+		teamAthleteRepository.save(newTeamAthlete);
+
+		responseDto.setSuccess(true);
+		responseDto.setMessage("Bem vindo(a) ao time " + team.getName() + "!");
 
 		return ResponseEntity.ok(responseDto);
 	}
