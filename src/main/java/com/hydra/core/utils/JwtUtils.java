@@ -14,6 +14,7 @@ import java.util.Date;
 public class JwtUtils {
 
 	private static final String JWT_ENV = "JWT_SECRET_KEY";
+	private static final String BASE_URL = System.getenv("BASE_URL");
 	private static final SecretKey jwtSecret;
 
 	static {
@@ -33,6 +34,21 @@ public class JwtUtils {
 				   .claim("name", name) //
 				   .claim("role", role) //
 				   .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 6)) // 6 hours
+				   .signWith(jwtSecret) //
+				   .compact();
+	}
+
+	public static String generateTeamInviteUrl(String teamId, String athleteId, String coachId) {
+		String token = generateInviteToken(teamId, athleteId, coachId);
+		return BASE_URL + "/teams/invite?token=" + token;
+	}
+
+	public static String generateInviteToken(String teamId, String athleteId, String coachId) {
+		return Jwts.builder() //
+				   .claim("teamId", teamId) //
+				   .claim("athleteId", athleteId) //
+				   .claim("coachId", coachId) //
+				   .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hour
 				   .signWith(jwtSecret) //
 				   .compact();
 	}
