@@ -19,6 +19,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 @Service
@@ -27,12 +30,14 @@ public class InviteService {
 	private final UserRepository userRepository;
 	private final TeamRepository teamRepository;
 	private final TeamAthleteRepository teamAthleteRepository;
+	private final EmailSender emailSender;
 
 	public InviteService(UserRepository userRepository, TeamRepository teamRepository,
-			TeamAthleteRepository teamAthleteRepository) {
+			TeamAthleteRepository teamAthleteRepository, EmailSender emailSender) {
 		this.userRepository = userRepository;
 		this.teamRepository = teamRepository;
 		this.teamAthleteRepository = teamAthleteRepository;
+		this.emailSender = emailSender;
 	}
 
 	@Transactional
@@ -162,6 +167,77 @@ public class InviteService {
 		responseDto.setMessage("Bem vindo(a) ao time " + team.getName() + "!");
 
 		return ResponseEntity.ok(responseDto);
+	}
+
+	public ResponseEntity<ResponseDto> sendInviteTokenByEmail(String authorization, String inviteToken)
+			throws IOException {
+		ResponseDto responseDto = new ResponseDto();
+
+		if (ValidationUtils.isEmpty(inviteToken)) {
+			responseDto.setMessage("O token é obrigatório!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
+		String token = JwtUtils.extractTokenFromHeader(authorization);
+
+		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+		InviteTokenDto inviteData = JwtUtils.parseInviteToken(inviteToken);
+
+		if (ValidationUtils.isEmpty(userByToken.id()) || ValidationUtils.isEmpty(
+				inviteData.coachId()) || !userByToken.id().equals(inviteData.coachId())) {
+			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+		}
+
+		Optional<TeamAthleteEntity> alreadyExists = teamAthleteRepository.findById(
+				new TeamAthleteId(inviteData.teamId(), inviteData.athleteId()));
+
+		if (alreadyExists.isPresent()) {
+			String teamName = alreadyExists.get().getTeam().getName();
+			responseDto.setMessage("O atleta já faz parte da equipe " + teamName + "!");
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(responseDto);
+		}
+
+		UserEntity athlete = userRepository.findById(inviteData.athleteId())
+										   .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado"));
+
+		if (ValidationUtils.isEmpty(athlete.getEmail())) {
+			responseDto.setMessage("O atleta não possui um e-mail cadastrado!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
+		TeamEntity team = teamRepository.findById(inviteData.teamId())
+										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
+		UserEntity coach = userRepository.findById(inviteData.coachId())
+										 .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado"));
+
+		String inviteUrl = JwtUtils.generateTeamInviteUrl(inviteToken);
+
+		String template = loadInviteTemplate();
+
+		String html = template.replace("{{teamName}}", team.getName()) //
+							  .replace("{{coachName}}", coach.getName()) //
+							  .replace("{{coachEmail}}", coach.getEmail()) //
+							  .replace("{{inviteUrl}}", inviteUrl) //
+							  .replace("{{userName}}", athlete.getName());
+
+		String subject = "Convite para o time " + team.getName();
+		emailSender.sendHtmlMail(athlete.getEmail(), subject, html);
+
+		responseDto.setSuccess(true);
+		responseDto.setMessage("Convite enviado por e-mail com sucesso!");
+		return ResponseEntity.ok(responseDto);
+	}
+
+	private String loadInviteTemplate() throws IOException {
+		String templatePath = "/templates/email-invite.html";
+
+		try (InputStream is = getClass().getResourceAsStream(templatePath)) {
+			if (is == null) {
+				throw new IOException("Template não encontrado: " + templatePath);
+			}
+			return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+		}
 	}
 
 }

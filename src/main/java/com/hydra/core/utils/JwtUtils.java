@@ -80,6 +80,10 @@ public class JwtUtils {
 		return BASE_URL + "/teams/invite?token=" + token;
 	}
 
+	public static String generateTeamInviteUrl(String inviteToken) {
+		return BASE_URL + "/teams/invite?token=" + inviteToken;
+	}
+
 	public static String generateInviteToken(String teamId, String athleteId, String coachId) {
 		return Jwts.builder() //
 				   .claim("teamId", teamId) //

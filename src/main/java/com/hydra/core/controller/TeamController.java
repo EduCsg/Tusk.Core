@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("teams")
 public class TeamController {
@@ -28,6 +30,13 @@ public class TeamController {
 	public ResponseEntity<ResponseDto> acceptInviteToken(@RequestHeader("Authorization") String authorization,
 			@PathVariable String inviteToken) {
 		return inviteService.acceptInviteToken(authorization, inviteToken);
+	}
+
+	@PostMapping("invite/send-email/{inviteToken}")
+	@PreAuthorize("hasAnyRole('COACH')")
+	public ResponseEntity<ResponseDto> sendInviteTokenByEmail(@RequestHeader("Authorization") String authorization,
+			@PathVariable String inviteToken) throws IOException {
+		return inviteService.sendInviteTokenByEmail(authorization, inviteToken);
 	}
 
 }

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Convite para o time</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");
+
+      body {
+        font-family: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial,
+          sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f6f8;
+      }
+
+      table {
+        border-collapse: collapse;
+      }
+
+      img {
+        border: 0;
+        display: block;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: none;
+      }
+
+      a[x-apple-data-detectors],
+      .unstyle-auto-detected-link,
+      a[href^="tel"],
+      a[href^="mailto"] {
+        color: inherit !important;
+        text-decoration: none !important;
+        border-bottom: none !important;
+        font-size: inherit !important;
+        font-family: inherit !important;
+      }
+
+      .email-wrapper {
+        width: 100%;
+        background-color: #f4f6f8;
+        padding: 20px 0;
+      }
+
+      .email-content {
+        width: 100%;
+        max-width: 680px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(90deg, #8b0000 0%, #c8102e 100%);
+        padding: 28px 32px;
+        color: #fff;
+      }
+
+      .logo {
+        font-weight: 700;
+        font-size: 20px;
+        letter-spacing: 0.6px;
+      }
+
+      .preheader {
+        display: none !important;
+        visibility: hidden;
+        opacity: 0;
+        color: transparent;
+        height: 0;
+        width: 0;
+      }
+
+      .body {
+        padding: 28px 32px;
+        color: #2d3748;
+      }
+
+      .greeting {
+        font-size: 18px;
+        margin: 0 0 8px 0;
+      }
+
+      .lead {
+        font-size: 15px;
+        margin: 0 0 18px 0;
+        color: #475569;
+      }
+
+      .card {
+        background: #fff8f2;
+        border-radius: 8px;
+        padding: 18px;
+        margin: 18px 0;
+        border: 1px solid #f0d8b0;
+      }
+
+      .meta {
+        font-size: 14px;
+        color: #4a2a24;
+        margin: 6px 0;
+      }
+
+      .cta {
+        display: inline-block;
+        background: linear-gradient(90deg, #8b0000 0%, #c8102e 100%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        box-sizing: border-box;
+        max-width: 100%;
+        overflow-wrap: break-word;
+      }
+
+      .footer {
+        background: #fff3e6;
+        padding: 18px 32px;
+        color: #6b4a35;
+        font-size: 13px;
+      }
+
+      .small {
+        font-size: 12px;
+        color: #8f6f4f;
+      }
+
+      @media only screen and (max-width: 480px) {
+        .email-content {
+          border-radius: 0;
+        }
+
+        .header,
+        .body,
+        .footer {
+          padding-left: 18px !important;
+          padding-right: 18px !important;
+        }
+
+        .cta {
+          width: 100%;
+          display: block;
+          text-align: center;
+          padding: 10px 14px !important;
+          font-size: 15px !important;
+          box-sizing: border-box !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preheader">
+      Você foi convidado(a) para fazer parte do time {{teamName}}.
+    </div>
+
+    <table
+      cellpadding="0"
+      cellspacing="0"
+      class="email-wrapper"
+      role="presentation"
+      width="100%"
+    >
+      <tr>
+        <td align="center">
+          <table
+            cellpadding="0"
+            cellspacing="0"
+            class="email-content"
+            role="presentation"
+            width="100%"
+          >
+            <tr>
+              <td align="left" class="header">
+                <table cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td style="vertical-align: middle; padding-right: 12px">
+                      <!-- Futuramente migrar para S3 -->
+                      <img
+                        alt="Hydra"
+                        height="70"
+                        src="https://i.postimg.cc/0QXZKfyQ/image-removebg-preview-1.png"
+                        style="
+                          display: block;
+                          border-radius: 6px;
+                          padding: 4px;
+                          background: #a90b1c;
+                        "
+                        width="70"
+                      />
+                    </td>
+                    <td style="vertical-align: middle">
+                      <span class="logo"> Hydra • Convite </span>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="body">
+                <p class="greeting">Olá, {{userName}}</p>
+                <p class="lead">
+                  Você recebeu um convite para ingressar no time
+                  <strong>{{teamName}}</strong>.
+                </p>
+
+                <div class="card">
+                  <p style="margin: 0 0 8px 0">
+                    <strong>Convite enviado por:</strong>
+                  </p>
+                  <p class="meta" style="margin: 0">
+                    <strong>{{coachName}}</strong>
+                  </p>
+                  <p class="small" style="margin: 4px 0 0 0">
+                    E-mail do responsável:
+                    <a
+                      href="mailto:{{coachEmail}}"
+                      style="
+                        color: inherit;
+                        text-decoration: none;
+                        border-bottom: none;
+                      "
+                      >{{coachEmail}}</a
+                    >
+                  </p>
+
+                  <hr
+                    style="
+                      border: none;
+                      border-top: 1px solid #e2e8f0;
+                      margin: 14px 0;
+                    "
+                  />
+
+                  <p style="margin: 0 0 10px 0">
+                    <strong>Time</strong>: {{teamName}}
+                  </p>
+                  <p style="margin: 0 0 12px 0; color: #475569">
+                    Para aceitar o convite e acessar o time, clique no botão
+                    abaixo:
+                  </p>
+
+                  <p style="margin: 0 0 12px 0">
+                    <a
+                      class="cta"
+                      href="{{inviteUrl}}"
+                      rel="noopener"
+                      target="_blank"
+                      role="button"
+                      aria-label="Aceitar convite para {{teamName}}"
+                      style="
+                        background: linear-gradient(
+                          90deg,
+                          #8b0000 0%,
+                          #c8102e 100%
+                        );
+                        color: #ffffff;
+                        display: inline-block;
+                        padding: 12px 20px;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        text-decoration: none;
+                        box-sizing: border-box;
+                      "
+                      >Aceitar convite</a
+                    >
+                  </p>
+
+                  <p class="small" style="margin: 0 0 6px 0">
+                    Se o botão não funcionar, copie e cole este link no seu
+                    navegador:
+                  </p>
+                  <p
+                    style="
+                      word-break: break-all;
+                      font-size: 13px;
+                      margin: 6px 0 0 0;
+                    "
+                  >
+                    <a
+                      href="{{inviteUrl}}"
+                      style="
+                        color: inherit;
+                        text-decoration: none;
+                        border-bottom: none;
+                      "
+                      >{{inviteUrl}}</a
+                    >
+                  </p>
+                </div>
+
+                <div>
+                  <p style="margin: 0 0 10px 0; color: #475569">
+                    Se você não solicitou este convite ou recebeu por engano,
+                    ignore este e-mail.
+                  </p>
+
+                  <p style="margin: 0 0 10px 0; color: #475569">
+                    Se precisar de ajuda, responda para
+                    <a
+                      href="mailto:{{coachEmail}}"
+                      style="
+                        color: inherit;
+                        text-decoration: none;
+                        border-bottom: none;
+                      "
+                      >{{coachEmail}}</a
+                    >.
+                  </p>
+                </div>
+
+                <p style="margin: 18px 0 0 0; color: #475569">
+                  Atenciosamente,<br />Equipe Hydra
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="left" class="footer">
+                <p style="margin: 0 0 6px 0">
+                  Nunca compartilhe seu token de acesso, códigos gerados pelo
+                  aplicativo ou senhas.
+                  <strong>Nossa equipe nunca solicitará sua senha.</strong>
+                </p>
+                <p class="small" style="margin: 8px 0 0 0">
+                  Hydra • Gerenciamento de equipes
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
