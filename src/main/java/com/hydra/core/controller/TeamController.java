@@ -1,5 +1,6 @@
 package com.hydra.core.controller;
 
+import com.hydra.core.dtos.CreateTeamDto;
 import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.TeamInviteRequestDto;
 import com.hydra.core.service.InviteService;
@@ -17,6 +18,13 @@ public class TeamController {
 
 	public TeamController(InviteService inviteService) {
 		this.inviteService = inviteService;
+	}
+
+	@PostMapping("create")
+	@PreAuthorize("hasAnyRole('COACH', 'ADMIN')")
+	public ResponseEntity<ResponseDto> createTeam(@RequestHeader("Authorization") String authorization,
+			@RequestBody CreateTeamDto dto) {
+		return inviteService.createTeam(authorization, dto);
 	}
 
 	@PostMapping("{teamId}/invite")

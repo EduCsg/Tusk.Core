@@ -9,6 +9,15 @@ public class ValidationUtils {
 		return str == null || str.isBlank();
 	}
 
+	public static boolean isAnyEmpty(String... values) {
+		for (String value : values) {
+			if (isEmpty(value)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static boolean isEmpty(List<?> list) {
 		return list == null || list.isEmpty() || list.getFirst() == null;
 	}

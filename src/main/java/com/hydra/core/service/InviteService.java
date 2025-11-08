@@ -1,20 +1,22 @@
 package com.hydra.core.service;
 
-import com.hydra.core.dtos.InviteTokenDto;
-import com.hydra.core.dtos.ResponseDto;
-import com.hydra.core.dtos.TeamInviteRequestDto;
-import com.hydra.core.dtos.UserDto;
+import com.hydra.core.dtos.*;
 import com.hydra.core.entity.TeamAthleteEntity;
+import com.hydra.core.entity.TeamCoachEntity;
 import com.hydra.core.entity.TeamEntity;
 import com.hydra.core.entity.UserEntity;
 import com.hydra.core.entity.pk.TeamAthleteId;
+import com.hydra.core.entity.pk.TeamCoachId;
+import com.hydra.core.exceptions.UnauthorizedException;
 import com.hydra.core.repository.TeamAthleteRepository;
+import com.hydra.core.repository.TeamCoachRepository;
 import com.hydra.core.repository.TeamRepository;
 import com.hydra.core.repository.UserRepository;
 import com.hydra.core.utils.JwtUtils;
 import com.hydra.core.utils.ValidationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -22,22 +24,75 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class InviteService {
 
 	private final UserRepository userRepository;
 	private final TeamRepository teamRepository;
 	private final TeamAthleteRepository teamAthleteRepository;
+	private final TeamCoachRepository teamCoachRepository;
 	private final EmailSender emailSender;
 
-	public InviteService(UserRepository userRepository, TeamRepository teamRepository,
-			TeamAthleteRepository teamAthleteRepository, EmailSender emailSender) {
-		this.userRepository = userRepository;
-		this.teamRepository = teamRepository;
-		this.teamAthleteRepository = teamAthleteRepository;
-		this.emailSender = emailSender;
+	@Transactional
+	public ResponseEntity<ResponseDto> createTeam(String authorization, CreateTeamDto dto) {
+		ResponseDto responseDto = new ResponseDto();
+
+		if (ValidationUtils.isAnyEmpty(dto.name(), dto.city(), dto.uf(), dto.color())) {
+			responseDto.setMessage("Preencha os campos obrigatórios corretamente!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
+		if (ValidationUtils.notEmpty(dto.imageUrl()) && !dto.imageUrl().startsWith("http")) {
+			responseDto.setMessage("A URL da imagem é inválida!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
+		String token;
+		try {
+			token = JwtUtils.extractTokenFromHeader(authorization);
+		} catch (UnauthorizedException ex) {
+			responseDto.setMessage(ex.getMessage());
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+		}
+
+		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
+			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+		}
+
+		UserEntity creator = userRepository.findById(userByToken.id())
+										   .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+
+		TeamEntity team = new TeamEntity();
+		team.setName(dto.name());
+		team.setDescription(dto.description());
+		team.setCity(dto.city());
+		team.setUf(dto.uf());
+		team.setColor(dto.color());
+		team.setImageUrl(dto.imageUrl());
+		team.setCreatedBy(creator);
+		team.setCoaches(new HashSet<>());
+		team.setAthletes(new HashSet<>());
+		teamRepository.save(team);
+
+		TeamCoachId teamCoachId = new TeamCoachId(team.getTeamId(), creator.getId());
+		TeamCoachEntity teamCoach = new TeamCoachEntity();
+		teamCoach.setId(teamCoachId);
+		teamCoach.setTeam(team);
+		teamCoach.setCoach(creator);
+
+		teamCoachRepository.save(teamCoach);
+
+		responseDto.setSuccess(true);
+		responseDto.setMessage("Time " + team.getName() + " criado com sucesso!");
+		responseDto.setData(team.getTeamId());
+
+		return ResponseEntity.ok(responseDto);
 	}
 
 	@Transactional
