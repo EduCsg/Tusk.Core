@@ -100,7 +100,7 @@ public class InviteService {
 			TeamInviteRequestDto request) {
 		ResponseDto responseDto = new ResponseDto();
 
-		if (ValidationUtils.isEmpty(request.athleteIdentifier()) || ValidationUtils.isEmpty(request.coachId())) {
+		if (ValidationUtils.isAnyEmpty(request.athleteIdentifier(), request.coachId())) {
 			responseDto.setMessage("Preencha os campos corretamente!");
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
@@ -238,8 +238,8 @@ public class InviteService {
 		UserDto userByToken = JwtUtils.parseTokenToUser(token);
 		InviteTokenDto inviteData = JwtUtils.parseInviteToken(inviteToken);
 
-		if (ValidationUtils.isEmpty(userByToken.id()) || ValidationUtils.isEmpty(
-				inviteData.coachId()) || !userByToken.id().equals(inviteData.coachId())) {
+		if (ValidationUtils.isAnyEmpty(userByToken.id(), inviteData.coachId()) || //
+				!userByToken.id().equals(inviteData.coachId())) {
 			responseDto.setMessage("Token inválido ou usuário não autorizado!");
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}

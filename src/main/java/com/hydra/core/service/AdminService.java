@@ -26,7 +26,7 @@ public class AdminService {
 	@Transactional
 	public ResponseEntity<ResponseDto> updateGlobalRole(String headers, UpdateGlobalRoleDto dto) {
 
-		if (ValidationUtils.isEmpty(dto.userId()) || ValidationUtils.isEmpty(dto.role()))
+		if (ValidationUtils.isAnyEmpty(dto.userId(), dto.role()))
 			return ResponseEntity.badRequest().body(new ResponseDto(
 					"É necessário informar o ID do usuário e as roles a serem atribuídas."));
 
