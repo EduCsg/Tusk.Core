@@ -3,6 +3,7 @@ CREATE TABLE teams
     id         VARCHAR(36)  NOT NULL PRIMARY KEY,
     name       VARCHAR(50)  NOT NULL,
     color      VARCHAR(255) NOT NULL,
+    image_url  VARCHAR(255),
     created_at TIMESTAMP    NOT NULL
 );
 

@@ -21,6 +21,9 @@ public class TeamEntity {
 	@Column(name = "color", nullable = false)
 	private String color;
 
+	@Column(name = "image_url")
+	private String imageUrl;
+
 	@ManyToMany(fetch = FetchType.LAZY)
 	@JoinTable(name = "teams_coaches", joinColumns = @JoinColumn(name = "team_id"), inverseJoinColumns = @JoinColumn(name = "coach_id"))
 	private Set<UserEntity> coaches;

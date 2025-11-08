@@ -215,7 +215,8 @@ public class InviteService {
 
 		String template = loadInviteTemplate();
 
-		String html = template.replace("{{teamName}}", team.getName()) //
+		String html = template.replace("{{teamImageUrl}}", team.getImageUrl()) //
+							  .replace("{{teamName}}", team.getName()) //
 							  .replace("{{coachName}}", coach.getName()) //
 							  .replace("{{coachEmail}}", coach.getEmail()) //
 							  .replace("{{inviteUrl}}", inviteUrl) //
