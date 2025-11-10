@@ -148,17 +148,6 @@ public class InviteService {
 		responseDto.setData(inviteUrl);
 		responseDto.setMessage("Link de convite gerado com sucesso");
 
-		TeamAthleteEntity teamAthlete = new TeamAthleteEntity();
-
-		teamAthlete.setTeam(team.get());
-		teamAthlete.setAthlete(athlete.get());
-		teamAthlete.setInvitedBy(coach.get());
-
-		TeamAthleteId id = new TeamAthleteId(team.get().getTeamId(), athlete.get().getId());
-		teamAthlete.setId(id);
-
-		teamAthleteRepository.save(teamAthlete);
-
 		return ResponseEntity.ok(responseDto);
 	}
 
