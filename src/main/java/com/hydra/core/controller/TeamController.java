@@ -34,6 +34,13 @@ public class TeamController {
 		return inviteService.createInviteToken(authorization, teamId, request);
 	}
 
+	@GetMapping("{teamId}/users")
+	@PreAuthorize("hasAnyRole('COACH', 'ADMIN')")
+	public ResponseEntity<ResponseDto> getTeamUsers(@RequestHeader("Authorization") String authorization,
+			@PathVariable String teamId) {
+		return inviteService.getTeamUsers(authorization, teamId);
+	}
+
 	@PostMapping("invite/accept/{inviteToken}")
 	public ResponseEntity<ResponseDto> acceptInviteToken(@RequestHeader("Authorization") String authorization,
 			@PathVariable String inviteToken) {

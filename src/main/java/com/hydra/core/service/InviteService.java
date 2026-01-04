@@ -8,6 +8,7 @@ import com.hydra.core.entity.UserEntity;
 import com.hydra.core.entity.pk.TeamAthleteId;
 import com.hydra.core.entity.pk.TeamCoachId;
 import com.hydra.core.exceptions.UnauthorizedException;
+import com.hydra.core.mappers.UserMapper;
 import com.hydra.core.repository.TeamAthleteRepository;
 import com.hydra.core.repository.TeamCoachRepository;
 import com.hydra.core.repository.TeamRepository;
@@ -147,6 +148,44 @@ public class InviteService {
 		responseDto.setSuccess(true);
 		responseDto.setData(inviteUrl);
 		responseDto.setMessage("Link de convite gerado com sucesso");
+
+		return ResponseEntity.ok(responseDto);
+	}
+
+	public ResponseEntity<ResponseDto> getTeamUsers(String authorization, String teamId) {
+		ResponseDto responseDto = new ResponseDto();
+
+		String token = JwtUtils.extractTokenFromHeader(authorization);
+		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+
+		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
+			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+		}
+
+		Optional<TeamEntity> teamOpt = teamRepository.findById(teamId);
+
+		if (teamOpt.isEmpty()) {
+			responseDto.setMessage("Time não encontrado");
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseDto);
+		}
+
+		TeamEntity team = teamOpt.get();
+
+		boolean isCoach = team.getCoaches().stream().anyMatch(c -> c.getId().equals(userByToken.id()));
+		boolean isAdmin = userByToken.role().contains("ADMIN");
+
+		if (!isCoach && !isAdmin) {
+			responseDto.setMessage("Usuário não autorizado a acessar os membros dessa equipe!");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+		}
+
+		TeamUsersDto teamUsersDto = new TeamUsersDto(UserMapper.entitiesToDtos(team.getCoaches()),
+				UserMapper.entitiesToDtos(team.getAthletes()));
+
+		responseDto.setSuccess(true);
+		responseDto.setData(teamUsersDto);
+		responseDto.setMessage("Membros da equipe recuperados com sucesso!");
 
 		return ResponseEntity.ok(responseDto);
 	}

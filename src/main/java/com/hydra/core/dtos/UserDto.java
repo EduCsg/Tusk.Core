@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Size;
 public record UserDto(
 
 		String id, //
+
+		@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) //
 		String token, //
 
 		@NotBlank(message = "O nome de usuário é obrigatório!") //
