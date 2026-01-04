@@ -5,6 +5,7 @@ import com.hydra.core.dtos.UpdateGlobalRoleDto;
 import com.hydra.core.dtos.UserDto;
 import com.hydra.core.entity.UserEntity;
 import com.hydra.core.enums.RoleEnums;
+import com.hydra.core.mappers.UserMapper;
 import com.hydra.core.repository.UserRepository;
 import com.hydra.core.utils.JwtUtils;
 import com.hydra.core.utils.ValidationUtils;
@@ -13,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @Service
 public class AdminService {
@@ -74,6 +77,16 @@ public class AdminService {
 		responseDto.setSuccess(true);
 		responseDto.setMessage("A role global do usuário foi atualizada com sucesso!");
 
+		return ResponseEntity.ok(responseDto);
+	}
+
+	public ResponseEntity<ResponseDto> getAllUsers() {
+		ResponseDto responseDto = new ResponseDto();
+
+		List<UserEntity> users = userRepository.findAll().stream().toList();
+
+		responseDto.setSuccess(true);
+		responseDto.setData(UserMapper.entitiesToDtos(users));
 		return ResponseEntity.ok(responseDto);
 	}
 

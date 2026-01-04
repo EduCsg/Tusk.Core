@@ -24,4 +24,10 @@ public class AdminController {
 		return adminService.updateGlobalRole(Authorization, dto);
 	}
 
+	@GetMapping("users")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<ResponseDto> getAllUsers() {
+		return adminService.getAllUsers();
+	}
+
 }
