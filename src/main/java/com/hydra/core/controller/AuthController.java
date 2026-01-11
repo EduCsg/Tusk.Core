@@ -1,5 +1,6 @@
 package com.hydra.core.controller;
 
+import com.hydra.core.dtos.LoginDto;
 import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.UserDto;
 import com.hydra.core.service.AuthService;
@@ -26,7 +27,7 @@ public class AuthController {
 	}
 
 	@PostMapping("login")
-	public ResponseEntity<ResponseDto> loginUser(@RequestBody UserDto userDto) {
+	public ResponseEntity<ResponseDto> loginUser(@RequestBody LoginDto userDto) {
 		return userService.loginUser(userDto);
 	}
 

@@ -1,5 +1,7 @@
 package com.hydra.core.service;
 
+import com.hydra.core.dtos.AuthResponseDto;
+import com.hydra.core.dtos.LoginDto;
 import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.UserDto;
 import com.hydra.core.entity.UserEntity;
@@ -33,10 +35,11 @@ public class AuthService {
 	@Transactional
 	public ResponseEntity<ResponseDto> registerUser(UserDto userDto) {
 		ResponseDto responseDto = new ResponseDto();
-		Optional<UserEntity> existingUser = userRepository.findByEmailOrUsername(userDto.email(), userDto.username());
+		Optional<UserEntity> existingUser = userRepository.findByEmailOrUsernameIgnoreCase(userDto.email(),
+				userDto.username());
 
 		if (existingUser.isPresent()) {
-			String message = existingUser.get().getEmail().equals(userDto.email())
+			String message = existingUser.get().getEmail().equalsIgnoreCase(userDto.email())
 					? "O email já está em uso!"
 					: "O nome de usuário já está em uso!";
 
@@ -49,19 +52,24 @@ public class AuthService {
 		userEntity.setPassword(BCrypt.hashpw(userDto.password()));
 		userEntity.setRole(RoleEnums.ROLE_ATHLETE.name());
 
+		String jwtToken = JwtUtils.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
+				userEntity.getName(), userEntity.getRole());
+
 		userRepository.save(userEntity);
 
+		AuthResponseDto authResponseDto = new AuthResponseDto(userEntity.getId(), jwtToken);
+
 		responseDto.setMessage("User registered successfully");
-		responseDto.setData(userEntity.getId());
+		responseDto.setData(authResponseDto);
 		responseDto.setSuccess(true);
 
 		return ResponseEntity.ok(responseDto);
 	}
 
 	@Transactional
-	public ResponseEntity<ResponseDto> loginUser(UserDto userDto) {
+	public ResponseEntity<ResponseDto> loginUser(LoginDto userDto) {
 		ResponseDto responseDto = new ResponseDto();
-		var userOpt = userRepository.findByEmailOrUsername(userDto.email(), userDto.username());
+		var userOpt = userRepository.findByEmailOrUsername(userDto.login(), userDto.login());
 
 		if (userOpt.isEmpty()) {
 			responseDto.setMessage("Usuário ou senha inválidos");
@@ -79,8 +87,10 @@ public class AuthService {
 		String jwtToken = JwtUtils.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
 				userEntity.getName(), userEntity.getRole());
 
+		AuthResponseDto authResponseDto = new AuthResponseDto(userEntity.getId(), jwtToken);
+
 		responseDto.setMessage("Login successful");
-		responseDto.setData(jwtToken);
+		responseDto.setData(authResponseDto);
 		responseDto.setSuccess(true);
 
 		return ResponseEntity.ok(responseDto);
