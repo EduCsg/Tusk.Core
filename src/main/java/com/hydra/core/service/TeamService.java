@@ -110,11 +110,11 @@ public class TeamService {
 		}
 
 		// Busca todos os membros
-		List<TeamMemberEntity> members = teamMemberRepository.findAllByTeamOrderedByRole(team);
+		List<TeamMemberEntity> members = teamMemberRepository.findAllByTeamOrderedByRole(team.getId());
 
 		List<TeamMemberDto> membersDto = members.stream().map(member -> new TeamMemberDto(member.getId(),
 				member.getUser().getId(), member.getUser().getName(), member.getUser().getEmail(),
-				member.getUser().getUsername(), member.getRole().name(),
+				member.getUser().getUsername(), member.getRole().getLabel(),
 				member.getInvitedBy() != null ? member.getInvitedBy().getName() : null, member.getJoinedAt(),
 				member.getCreatedAt())).toList();
 
@@ -155,7 +155,7 @@ public class TeamService {
 
 		TeamEntity team = teamOpt.get();
 		TeamDetailsDto teamDetailsDto = new TeamDetailsDto(team.getId(), team.getName(), team.getDescription(),
-				team.getCity(), team.getUf(), team.getColor(), teamMember.getRole().name(), team.getImageUrl(),
+				team.getCity(), team.getUf(), team.getColor(), teamMember.getRole().getLabel(), team.getImageUrl(),
 				team.getCreatedAt());
 
 		responseDto.setSuccess(true);
@@ -188,7 +188,7 @@ public class TeamService {
 
 		TeamEntity team = teamMember.getTeam();
 		TeamDetailsDto teamDetailsDto = new TeamDetailsDto(team.getId(), team.getName(), team.getDescription(),
-				team.getCity(), team.getUf(), team.getColor(), teamMember.getRole().name(), team.getImageUrl(),
+				team.getCity(), team.getUf(), team.getColor(), teamMember.getRole().getLabel(), team.getImageUrl(),
 				team.getCreatedAt());
 
 		responseDto.setSuccess(true);

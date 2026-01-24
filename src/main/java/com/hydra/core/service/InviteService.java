@@ -44,6 +44,12 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
+		TeamRole teamRole = TeamRole.fromString(request.role());
+		if (teamRole != TeamRole.ATHLETE && teamRole != TeamRole.COACH) {
+			responseDto.setMessage("Tipo de usuário inválido!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
 		String token = JwtUtils.extractTokenFromHeader(authorization);
 		UserDto userByToken = JwtUtils.parseTokenToUser(token);
 
@@ -84,7 +90,12 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseDto);
 		}
 
-		TeamRole teamRole = TeamRole.fromString(request.role());
+		String athleteId = athlete.get().getId();
+		if (team.get().getAthletes().stream().anyMatch(a -> a.getId().equals(athleteId))) {
+			responseDto.setMessage("O usuário já é membro dessa equipe!");
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
+		}
+
 		String inviteUrl = JwtUtils.generateTeamInviteUrl(teamId, athlete.get().getId(), coach.get().getId(), teamRole);
 
 		responseDto.setSuccess(true);
@@ -145,7 +156,7 @@ public class InviteService {
 
 		if (alreadyExists.isPresent()) {
 			String teamName = alreadyExists.get().getTeam().getName();
-			String currentRole = alreadyExists.get().getRole().name();
+			String currentRole = alreadyExists.get().getRole().getLabel();
 			responseDto.setMessage("Você já faz parte da equipe " + teamName + " como " + currentRole + "!");
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(responseDto);
 		}
@@ -166,13 +177,13 @@ public class InviteService {
 		newMember.setUser(user);
 		newMember.setRole(role);
 		newMember.setInvitedBy(inviter);
-		// joinedAt e createdAt são setados no @PrePersist
 
 		teamMemberRepository.save(newMember);
 
 		responseDto.setSuccess(true);
 		String roleMessage = role == TeamRole.COACH ? "treinador(a)" : "atleta";
-		responseDto.setMessage("Bem-vindo(a) ao time " + team.getName() + " como " + roleMessage + "!");
+		responseDto.setMessage(
+				"Boas vindas a equipe! Agora você é um(a) " + roleMessage + " do time " + team.getName() + "!");
 
 		return ResponseEntity.ok(responseDto);
 	}
@@ -219,7 +230,7 @@ public class InviteService {
 
 		if (alreadyExists.isPresent()) {
 			String teamName = alreadyExists.get().getTeam().getName();
-			String currentRole = alreadyExists.get().getRole().name();
+			String currentRole = alreadyExists.get().getRole().getLabel();
 			responseDto.setMessage("O usuário já faz parte da equipe " + teamName + " como " + currentRole + "!");
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(responseDto);
 		}
@@ -247,11 +258,13 @@ public class InviteService {
 
 		String roleText = role == TeamRole.COACH ? "treinador(a)" : "atleta";
 
-		String html = template.replace("{{teamImageUrl}}", team.getImageUrl()).replace("{{teamName}}", team.getName())
-							  .replace("{{inviterName}}", inviter.getName())  // em vez de coachName
-							  .replace("{{inviterEmail}}", inviter.getEmail()) // em vez de coachEmail
-							  .replace("{{inviteUrl}}", inviteUrl).replace("{{userName}}", invitedUser.getName())
-							  .replace("{{role}}", roleText); // adiciona a role no template
+		String html = template //
+							   .replace("{{teamImageUrl}}", team.getImageUrl()) //
+							   .replace("{{teamName}}", team.getName()) //
+							   .replace("{{inviterName}}", inviter.getName()) //
+							   .replace("{{inviterEmail}}", inviter.getEmail()) //
+							   .replace("{{inviteUrl}}", inviteUrl) //
+							   .replace("{{userName}}", invitedUser.getName());
 
 		String subject = "Convite para o time " + team.getName();
 		emailSender.sendHtmlMail(invitedUser.getEmail(), subject, html);

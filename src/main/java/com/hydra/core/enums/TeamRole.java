@@ -4,12 +4,13 @@ import lombok.Getter;
 
 @Getter
 public enum TeamRole {
-	OWNER(1), COACH(2), ATHLETE(3);
 
-	private final int order;
+	OWNER("Dono"), COACH("Treinador"), ATHLETE("Atleta");
 
-	TeamRole(int order) {
-		this.order = order;
+	private final String label;
+
+	TeamRole(String label) {
+		this.label = label;
 	}
 
 	public static TeamRole fromString(String role) {
@@ -18,6 +19,6 @@ public enum TeamRole {
 				return teamRole;
 			}
 		}
-		throw new IllegalArgumentException("No enum constant for role: " + role);
+		return null;
 	}
 }

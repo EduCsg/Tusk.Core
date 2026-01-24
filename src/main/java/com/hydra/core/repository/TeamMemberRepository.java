@@ -20,9 +20,17 @@ public interface TeamMemberRepository extends JpaRepository<TeamMemberEntity, St
 
 	TeamMemberEntity findFirstByUserOrderByJoinedAtAsc(UserEntity user);
 
-	@Query("""
-				SELECT tm FROM TeamMemberEntity tm WHERE tm.team = :team ORDER BY tm.role ASC, tm.joinedAt ASC
-			""")
-	List<TeamMemberEntity> findAllByTeamOrderedByRole(@Param("team") TeamEntity team);
+	@Query(value = """
+			SELECT * FROM team_members 
+			WHERE team_id = :teamId 
+			ORDER BY 
+			    CASE role 
+			        WHEN 'OWNER' THEN 1 
+			        WHEN 'COACH' THEN 2 
+			        WHEN 'ATHLETE' THEN 3 
+			    END,
+			    joined_at ASC
+			""", nativeQuery = true)
+	List<TeamMemberEntity> findAllByTeamOrderedByRole(@Param("teamId") String teamId);
 
 }
