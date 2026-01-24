@@ -1,10 +1,11 @@
 package com.hydra.core.entity;
 
+import com.hydra.core.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.List;
 
 @Data
 @Entity
@@ -14,7 +15,7 @@ public class TeamEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	@Column(name = "id", length = 36)
-	private String teamId;
+	private String id;
 
 	@Column(name = "name", nullable = false, length = 50)
 	private String name;
@@ -35,23 +36,55 @@ public class TeamEntity {
 	private String imageUrl;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", nullable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private UserEntity createdBy;
 
-	@ManyToMany(fetch = FetchType.LAZY)
-	@JoinTable(name = "teams_coaches", joinColumns = @JoinColumn(name = "team_id"), inverseJoinColumns = @JoinColumn(name = "coach_id"))
-	private Set<UserEntity> coaches;
+	@OneToMany(mappedBy = "team", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	private List<TeamMemberEntity> members;
 
-	@ManyToMany(fetch = FetchType.LAZY)
-	@JoinTable(name = "teams_athletes", joinColumns = @JoinColumn(name = "team_id"), inverseJoinColumns = @JoinColumn(name = "athlete_id"))
-	private Set<UserEntity> athletes;
-
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
+
+	@Column(name = "updated_at")
+	private LocalDateTime updatedAt;
 
 	@PrePersist
 	private void prePersist() {
 		createdAt = LocalDateTime.now();
+		updatedAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	private void preUpdate() {
+		updatedAt = LocalDateTime.now();
+	}
+
+	// Métodos helper úteis
+	public List<UserEntity> getCoaches() {
+		return members.stream().filter(m -> m.getRole() == TeamRole.COACH || m.getRole() == TeamRole.OWNER)
+					  .map(TeamMemberEntity::getUser).toList();
+	}
+
+	public List<UserEntity> getAthletes() {
+		return members.stream().filter(m -> m.getRole() == TeamRole.ATHLETE).map(TeamMemberEntity::getUser).toList();
+	}
+
+	public List<UserEntity> getOwners() {
+		return members.stream().filter(m -> m.getRole() == TeamRole.OWNER).map(TeamMemberEntity::getUser).toList();
+	}
+
+	public boolean isOwner(UserEntity user) {
+		return members.stream()
+					  .anyMatch(m -> m.getUser().getId().equals(user.getId()) && m.getRole() == TeamRole.OWNER);
+	}
+
+	public boolean isCoach(UserEntity user) {
+		return members.stream().anyMatch(m -> m.getUser().getId()
+											   .equals(user.getId()) && (m.getRole() == TeamRole.COACH || m.getRole() == TeamRole.OWNER));
+	}
+
+	public boolean isMember(UserEntity user) {
+		return members.stream().anyMatch(m -> m.getUser().getId().equals(user.getId()));
 	}
 
 }

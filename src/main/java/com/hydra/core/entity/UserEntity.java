@@ -1,9 +1,11 @@
 package com.hydra.core.entity;
 
+import com.hydra.core.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Entity
@@ -27,8 +29,8 @@ public class UserEntity {
 	@Column(nullable = false)
 	private String password;
 
-	@Column(nullable = false, length = 20)
-	private String role;
+	@OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+	private List<TeamMemberEntity> teamMemberships;
 
 	private LocalDateTime updatedAt;
 	private LocalDateTime createdAt;
@@ -42,6 +44,16 @@ public class UserEntity {
 	@PreUpdate
 	private void preUpdate() {
 		updatedAt = LocalDateTime.now();
+	}
+
+	public List<TeamEntity> getTeamsAsCoach() {
+		return teamMemberships.stream().filter(m -> m.getRole() == TeamRole.COACH || m.getRole() == TeamRole.OWNER)
+							  .map(TeamMemberEntity::getTeam).toList();
+	}
+
+	public List<TeamEntity> getTeamsAsAthlete() {
+		return teamMemberships.stream().filter(m -> m.getRole() == TeamRole.ATHLETE).map(TeamMemberEntity::getTeam)
+							  .toList();
 	}
 
 }

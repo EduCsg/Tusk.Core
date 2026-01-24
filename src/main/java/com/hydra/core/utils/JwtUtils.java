@@ -2,6 +2,7 @@ package com.hydra.core.utils;
 
 import com.hydra.core.dtos.InviteTokenDto;
 import com.hydra.core.dtos.UserDto;
+import com.hydra.core.enums.TeamRole;
 import com.hydra.core.exceptions.UnauthorizedException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -38,14 +39,13 @@ public class JwtUtils {
 		return authorizationHeader.substring(prefix.length()).trim();
 	}
 
-	public static String generateToken(String userId, String username, String email, String name, String role) {
+	public static String generateToken(String userId, String username, String email, String name) {
 		return Jwts.builder() //
 				   .subject(username) //
 				   .claim("userId", userId) //
 				   .claim("username", username) //
 				   .claim("email", email) //
 				   .claim("name", name) //
-				   .claim("role", role) //
 				   .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 6)) // 6 hours
 				   .signWith(jwtSecret) //
 				   .compact();
@@ -70,13 +70,12 @@ public class JwtUtils {
 		String username = payload.get("username").toString();
 		String email = payload.get("email").toString();
 		String name = payload.get("name").toString();
-		String role = payload.get("role").toString();
 
-		return new UserDto(userId, token, username, name, email, null, role);
+		return new UserDto(userId, token, username, name, email, null);
 	}
 
-	public static String generateTeamInviteUrl(String teamId, String athleteId, String coachId) {
-		String token = generateInviteToken(teamId, athleteId, coachId);
+	public static String generateTeamInviteUrl(String teamId, String athleteId, String coachId, TeamRole role) {
+		String token = generateInviteToken(teamId, athleteId, coachId, role);
 		return BASE_URL + "/teams/invite?token=" + token;
 	}
 
@@ -84,11 +83,12 @@ public class JwtUtils {
 		return BASE_URL + "/teams/invite?token=" + inviteToken;
 	}
 
-	public static String generateInviteToken(String teamId, String athleteId, String coachId) {
+	public static String generateInviteToken(String teamId, String athleteId, String coachId, TeamRole role) {
 		return Jwts.builder() //
 				   .claim("teamId", teamId) //
 				   .claim("athleteId", athleteId) //
 				   .claim("coachId", coachId) //
+				   .claim("role", role.toString()) //
 				   .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hour
 				   .signWith(jwtSecret) //
 				   .compact();
@@ -100,8 +100,9 @@ public class JwtUtils {
 		String teamId = payload.get("teamId").toString();
 		String athleteId = payload.get("athleteId").toString();
 		String coachId = payload.get("coachId").toString();
+		String role = payload.get("role").toString();
 
-		return new InviteTokenDto(teamId, athleteId, coachId);
+		return new InviteTokenDto(teamId, athleteId, coachId, role);
 	}
 
 }

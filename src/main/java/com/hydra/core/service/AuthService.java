@@ -5,11 +5,11 @@ import com.hydra.core.dtos.LoginDto;
 import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.UserDto;
 import com.hydra.core.entity.UserEntity;
-import com.hydra.core.enums.RoleEnums;
 import com.hydra.core.repository.UserRepository;
 import com.hydra.core.utils.BCrypt;
 import com.hydra.core.utils.JwtUtils;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
 	private final UserRepository userRepository;
@@ -26,10 +27,6 @@ public class AuthService {
 
 	{
 		mapper.getConfiguration().setFieldMatchingEnabled(true).setFieldAccessLevel(Configuration.AccessLevel.PRIVATE);
-	}
-
-	public AuthService(UserRepository userRepository) {
-		this.userRepository = userRepository;
 	}
 
 	@Transactional
@@ -50,12 +47,11 @@ public class AuthService {
 
 		UserEntity userEntity = mapper.map(userDto, UserEntity.class);
 		userEntity.setPassword(BCrypt.hashpw(userDto.password()));
-		userEntity.setRole(RoleEnums.ROLE_ATHLETE.name());
-
-		String jwtToken = JwtUtils.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
-				userEntity.getName(), userEntity.getRole());
 
 		userRepository.save(userEntity);
+
+		String jwtToken = JwtUtils.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
+				userEntity.getName());
 
 		AuthResponseDto authResponseDto = new AuthResponseDto(userEntity.getId(), jwtToken);
 
@@ -69,7 +65,7 @@ public class AuthService {
 	@Transactional
 	public ResponseEntity<ResponseDto> loginUser(LoginDto userDto) {
 		ResponseDto responseDto = new ResponseDto();
-		var userOpt = userRepository.findByEmailOrUsername(userDto.login(), userDto.login());
+		Optional<UserEntity> userOpt = userRepository.findByEmailOrUsername(userDto.login(), userDto.login());
 
 		if (userOpt.isEmpty()) {
 			responseDto.setMessage("Usuário ou senha inválidos");
@@ -85,7 +81,7 @@ public class AuthService {
 		}
 
 		String jwtToken = JwtUtils.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
-				userEntity.getName(), userEntity.getRole());
+				userEntity.getName());
 
 		AuthResponseDto authResponseDto = new AuthResponseDto(userEntity.getId(), jwtToken);
 

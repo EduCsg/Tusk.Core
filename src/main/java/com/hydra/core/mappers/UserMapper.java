@@ -24,8 +24,7 @@ public class UserMapper {
 	}
 
 	public static UserDto entityToDto(UserEntity entity) {
-		return new UserDto(entity.getId(), null, entity.getUsername(), entity.getName(), entity.getEmail(), null,
-				entity.getRole());
+		return new UserDto(entity.getId(), null, entity.getUsername(), entity.getName(), entity.getEmail(), null);
 	}
 
 }

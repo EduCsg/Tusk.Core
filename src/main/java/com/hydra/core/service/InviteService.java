@@ -1,16 +1,14 @@
 package com.hydra.core.service;
 
-import com.hydra.core.dtos.*;
-import com.hydra.core.entity.TeamAthleteEntity;
-import com.hydra.core.entity.TeamCoachEntity;
+import com.hydra.core.dtos.InviteTokenDto;
+import com.hydra.core.dtos.ResponseDto;
+import com.hydra.core.dtos.TeamInviteRequestDto;
+import com.hydra.core.dtos.UserDto;
 import com.hydra.core.entity.TeamEntity;
+import com.hydra.core.entity.TeamMemberEntity;
 import com.hydra.core.entity.UserEntity;
-import com.hydra.core.entity.pk.TeamAthleteId;
-import com.hydra.core.entity.pk.TeamCoachId;
-import com.hydra.core.exceptions.UnauthorizedException;
-import com.hydra.core.mappers.UserMapper;
-import com.hydra.core.repository.TeamAthleteRepository;
-import com.hydra.core.repository.TeamCoachRepository;
+import com.hydra.core.enums.TeamRole;
+import com.hydra.core.repository.TeamMemberRepository;
 import com.hydra.core.repository.TeamRepository;
 import com.hydra.core.repository.UserRepository;
 import com.hydra.core.utils.JwtUtils;
@@ -25,7 +23,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Optional;
 
 @Service
@@ -34,67 +31,8 @@ public class InviteService {
 
 	private final UserRepository userRepository;
 	private final TeamRepository teamRepository;
-	private final TeamAthleteRepository teamAthleteRepository;
-	private final TeamCoachRepository teamCoachRepository;
+	private final TeamMemberRepository teamMemberRepository;
 	private final EmailSender emailSender;
-
-	@Transactional
-	public ResponseEntity<ResponseDto> createTeam(String authorization, CreateTeamDto dto) {
-		ResponseDto responseDto = new ResponseDto();
-
-		if (ValidationUtils.isAnyEmpty(dto.name(), dto.city(), dto.uf(), dto.color())) {
-			responseDto.setMessage("Preencha os campos obrigatórios corretamente!");
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
-		}
-
-		if (ValidationUtils.notEmpty(dto.imageUrl()) && !dto.imageUrl().startsWith("http")) {
-			responseDto.setMessage("A URL da imagem é inválida!");
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
-		}
-
-		String token;
-		try {
-			token = JwtUtils.extractTokenFromHeader(authorization);
-		} catch (UnauthorizedException ex) {
-			responseDto.setMessage(ex.getMessage());
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
-
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
-		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage("Token inválido ou usuário não autorizado!");
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
-
-		UserEntity creator = userRepository.findById(userByToken.id())
-										   .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
-
-		TeamEntity team = new TeamEntity();
-		team.setName(dto.name());
-		team.setDescription(dto.description());
-		team.setCity(dto.city());
-		team.setUf(dto.uf());
-		team.setColor(dto.color());
-		team.setImageUrl(dto.imageUrl());
-		team.setCreatedBy(creator);
-		team.setCoaches(new HashSet<>());
-		team.setAthletes(new HashSet<>());
-		teamRepository.save(team);
-
-		TeamCoachId teamCoachId = new TeamCoachId(team.getTeamId(), creator.getId());
-		TeamCoachEntity teamCoach = new TeamCoachEntity();
-		teamCoach.setId(teamCoachId);
-		teamCoach.setTeam(team);
-		teamCoach.setCoach(creator);
-
-		teamCoachRepository.save(teamCoach);
-
-		responseDto.setSuccess(true);
-		responseDto.setMessage("Time " + team.getName() + " criado com sucesso!");
-		responseDto.setData(team.getTeamId());
-
-		return ResponseEntity.ok(responseDto);
-	}
 
 	@Transactional
 	public ResponseEntity<ResponseDto> createInviteToken(String authorization, String teamId,
@@ -109,9 +47,12 @@ public class InviteService {
 		String token = JwtUtils.extractTokenFromHeader(authorization);
 		UserDto userByToken = JwtUtils.parseTokenToUser(token);
 
-		if (ValidationUtils.isEmpty(userByToken) || !userByToken.id().equals(request.coachId())) {
-			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+		if (ValidationUtils.isEmpty(userByToken)) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+		}
+
+		if (!userByToken.id().equals(request.coachId())) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
 		}
 
 		Optional<TeamEntity> team = teamRepository.findById(teamId);
@@ -132,7 +73,7 @@ public class InviteService {
 
 		if (!coachInTeam) {
 			responseDto.setMessage("Professor não autorizado a convidar para essa equipe!");
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
 		}
 
 		Optional<UserEntity> athlete = userRepository.findByEmailOrUsername(request.athleteIdentifier(),
@@ -143,49 +84,12 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseDto);
 		}
 
-		String inviteUrl = JwtUtils.generateTeamInviteUrl(teamId, athlete.get().getId(), coach.get().getId());
+		TeamRole teamRole = TeamRole.fromString(request.role());
+		String inviteUrl = JwtUtils.generateTeamInviteUrl(teamId, athlete.get().getId(), coach.get().getId(), teamRole);
 
 		responseDto.setSuccess(true);
 		responseDto.setData(inviteUrl);
 		responseDto.setMessage("Link de convite gerado com sucesso");
-
-		return ResponseEntity.ok(responseDto);
-	}
-
-	public ResponseEntity<ResponseDto> getTeamUsers(String authorization, String teamId) {
-		ResponseDto responseDto = new ResponseDto();
-
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
-
-		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage("Token inválido ou usuário não autorizado!");
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
-
-		Optional<TeamEntity> teamOpt = teamRepository.findById(teamId);
-
-		if (teamOpt.isEmpty()) {
-			responseDto.setMessage("Time não encontrado");
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseDto);
-		}
-
-		TeamEntity team = teamOpt.get();
-
-		boolean isCoach = team.getCoaches().stream().anyMatch(c -> c.getId().equals(userByToken.id()));
-		boolean isAdmin = userByToken.role().contains("ADMIN");
-
-		if (!isCoach && !isAdmin) {
-			responseDto.setMessage("Usuário não autorizado a acessar os membros dessa equipe!");
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
-
-		TeamUsersDto teamUsersDto = new TeamUsersDto(UserMapper.entitiesToDtos(team.getCoaches()),
-				UserMapper.entitiesToDtos(team.getAthletes()));
-
-		responseDto.setSuccess(true);
-		responseDto.setData(teamUsersDto);
-		responseDto.setMessage("Membros da equipe recuperados com sucesso!");
 
 		return ResponseEntity.ok(responseDto);
 	}
@@ -214,40 +118,61 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
-		if (!userByToken.id().equals(inviteData.athleteId())) {
+		// Valida que o token é para o usuário logado
+		if (!userByToken.id().equals(inviteData.userId())) {
 			responseDto.setMessage("Você não pode aceitar esse convite!");
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
 		}
 
-		Optional<TeamAthleteEntity> alreadyExists = teamAthleteRepository.findById(
-				new TeamAthleteId(inviteData.teamId(), inviteData.athleteId()));
+		// Valida se a role é válida
+		TeamRole role;
+		try {
+			role = TeamRole.valueOf(inviteData.role());
+		} catch (IllegalArgumentException e) {
+			responseDto.setMessage("Papel inválido no convite!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
+		// Não permite convite para OWNER via token
+		if (role == TeamRole.OWNER) {
+			responseDto.setMessage("Não é possível aceitar convite como proprietário!");
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
+		}
+
+		// Verifica se já é membro do time
+		Optional<TeamMemberEntity> alreadyExists = teamMemberRepository.findByTeamIdAndUserId(inviteData.teamId(),
+				inviteData.userId());
 
 		if (alreadyExists.isPresent()) {
 			String teamName = alreadyExists.get().getTeam().getName();
-			responseDto.setMessage("Você já faz parte da equipe " + teamName + "!");
+			String currentRole = alreadyExists.get().getRole().name();
+			responseDto.setMessage("Você já faz parte da equipe " + teamName + " como " + currentRole + "!");
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(responseDto);
 		}
 
-		TeamAthleteEntity newTeamAthlete = new TeamAthleteEntity();
-
+		// Busca as entidades necessárias
 		TeamEntity team = teamRepository.findById(inviteData.teamId())
 										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
-		UserEntity athlete = userRepository.findById(inviteData.athleteId())
-										   .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado"));
-		UserEntity coach = userRepository.findById(inviteData.coachId())
-										 .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado"));
 
-		TeamAthleteId newTeamAthleteId = new TeamAthleteId(team.getTeamId(), athlete.getId());
-		newTeamAthlete.setId(newTeamAthleteId);
+		UserEntity user = userRepository.findById(inviteData.userId())
+										.orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
-		newTeamAthlete.setTeam(team);
-		newTeamAthlete.setAthlete(athlete);
-		newTeamAthlete.setInvitedBy(coach);
+		UserEntity inviter = userRepository.findById(inviteData.invitedBy()).orElseThrow(
+				() -> new EntityNotFoundException("Quem convidou não foi encontrado"));
 
-		teamAthleteRepository.save(newTeamAthlete);
+		// Cria o novo membro
+		TeamMemberEntity newMember = new TeamMemberEntity();
+		newMember.setTeam(team);
+		newMember.setUser(user);
+		newMember.setRole(role);
+		newMember.setInvitedBy(inviter);
+		// joinedAt e createdAt são setados no @PrePersist
+
+		teamMemberRepository.save(newMember);
 
 		responseDto.setSuccess(true);
-		responseDto.setMessage("Bem vindo(a) ao time " + team.getName() + "!");
+		String roleMessage = role == TeamRole.COACH ? "treinador(a)" : "atleta";
+		responseDto.setMessage("Bem-vindo(a) ao time " + team.getName() + " como " + roleMessage + "!");
 
 		return ResponseEntity.ok(responseDto);
 	}
@@ -266,47 +191,70 @@ public class InviteService {
 		UserDto userByToken = JwtUtils.parseTokenToUser(token);
 		InviteTokenDto inviteData = JwtUtils.parseInviteToken(inviteToken);
 
-		if (ValidationUtils.isAnyEmpty(userByToken.id(), inviteData.coachId()) || //
-				!userByToken.id().equals(inviteData.coachId())) {
+		// Valida que quem está enviando é quem criou o convite
+		if (ValidationUtils.isAnyEmpty(userByToken.id(), inviteData.invitedBy()) || !userByToken.id()
+																								.equals(inviteData.invitedBy())) {
 			responseDto.setMessage("Token inválido ou usuário não autorizado!");
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
-		Optional<TeamAthleteEntity> alreadyExists = teamAthleteRepository.findById(
-				new TeamAthleteId(inviteData.teamId(), inviteData.athleteId()));
+		// Valida se a role é válida
+		TeamRole role;
+		try {
+			role = TeamRole.valueOf(inviteData.role());
+		} catch (IllegalArgumentException e) {
+			responseDto.setMessage("Papel inválido no convite!");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
+		}
+
+		// Não permite convite para OWNER via token
+		if (role == TeamRole.OWNER) {
+			responseDto.setMessage("Não é possível enviar convite como proprietário!");
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
+		}
+
+		// Verifica se já é membro do time
+		Optional<TeamMemberEntity> alreadyExists = teamMemberRepository.findByTeamIdAndUserId(inviteData.teamId(),
+				inviteData.userId());
 
 		if (alreadyExists.isPresent()) {
 			String teamName = alreadyExists.get().getTeam().getName();
-			responseDto.setMessage("O atleta já faz parte da equipe " + teamName + "!");
+			String currentRole = alreadyExists.get().getRole().name();
+			responseDto.setMessage("O usuário já faz parte da equipe " + teamName + " como " + currentRole + "!");
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(responseDto);
 		}
 
-		UserEntity athlete = userRepository.findById(inviteData.athleteId())
-										   .orElseThrow(() -> new EntityNotFoundException("Atleta não encontrado"));
+		// Busca as entidades necessárias
+		UserEntity invitedUser = userRepository.findById(inviteData.userId()).orElseThrow(
+				() -> new EntityNotFoundException("Usuário não encontrado"));
 
-		if (ValidationUtils.isEmpty(athlete.getEmail())) {
-			responseDto.setMessage("O atleta não possui um e-mail cadastrado!");
+		if (ValidationUtils.isEmpty(invitedUser.getEmail())) {
+			responseDto.setMessage("O usuário não possui um e-mail cadastrado!");
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
 		TeamEntity team = teamRepository.findById(inviteData.teamId())
 										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
-		UserEntity coach = userRepository.findById(inviteData.coachId())
-										 .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado"));
 
+		UserEntity inviter = userRepository.findById(inviteData.invitedBy()).orElseThrow(
+				() -> new EntityNotFoundException("Quem convidou não foi encontrado"));
+
+		// Gera URL do convite
 		String inviteUrl = JwtUtils.generateTeamInviteUrl(inviteToken);
 
+		// Carrega e personaliza o template
 		String template = loadInviteTemplate();
 
-		String html = template.replace("{{teamImageUrl}}", team.getImageUrl()) //
-							  .replace("{{teamName}}", team.getName()) //
-							  .replace("{{coachName}}", coach.getName()) //
-							  .replace("{{coachEmail}}", coach.getEmail()) //
-							  .replace("{{inviteUrl}}", inviteUrl) //
-							  .replace("{{userName}}", athlete.getName());
+		String roleText = role == TeamRole.COACH ? "treinador(a)" : "atleta";
+
+		String html = template.replace("{{teamImageUrl}}", team.getImageUrl()).replace("{{teamName}}", team.getName())
+							  .replace("{{inviterName}}", inviter.getName())  // em vez de coachName
+							  .replace("{{inviterEmail}}", inviter.getEmail()) // em vez de coachEmail
+							  .replace("{{inviteUrl}}", inviteUrl).replace("{{userName}}", invitedUser.getName())
+							  .replace("{{role}}", roleText); // adiciona a role no template
 
 		String subject = "Convite para o time " + team.getName();
-		emailSender.sendHtmlMail(athlete.getEmail(), subject, html);
+		emailSender.sendHtmlMail(invitedUser.getEmail(), subject, html);
 
 		responseDto.setSuccess(true);
 		responseDto.setMessage("Convite enviado por e-mail com sucesso!");

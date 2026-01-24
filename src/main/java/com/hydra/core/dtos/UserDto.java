@@ -29,9 +29,7 @@ public record UserDto(
 		@NotBlank(message = "A senha é obrigatória!") //
 		@Size(min = 8, max = 40, message = "A senha deve ter entre 8 e 40 caracteres!") //
 		@Pattern(regexp = ".*[^a-zA-Z0-9 ].*", message = "A senha deve conter ao menos um caractere especial!") //
-		String password,
-
-		String role
+		String password
 
 ) {
 
