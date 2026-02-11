@@ -20,4 +20,15 @@ public class ResponseDto {
 		this.message = message;
 	}
 
+	public ResponseDto(String message, Object data) {
+		this.message = message;
+		this.data = data;
+		this.success = true;
+	}
+
+	public ResponseDto(String message, boolean success) {
+		this.message = message;
+		this.success = success;
+	}
+
 }

@@ -1,5 +1,6 @@
 package com.hydra.core.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.hydra.core.enums.TeamRole;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -10,6 +11,7 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "users", indexes = { @Index(columnList = "email"), @Index(columnList = "username") })
+@JsonIgnoreProperties({ "teamMemberships", "password" })
 public class UserEntity {
 
 	@Id
