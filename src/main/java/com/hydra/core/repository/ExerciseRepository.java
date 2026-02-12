@@ -1,8 +1,6 @@
 package com.hydra.core.repository;
 
 import com.hydra.core.entity.ExerciseEntity;
-import com.hydra.core.enums.Difficulty;
-import com.hydra.core.enums.Equipment;
 import com.hydra.core.enums.MuscleGroup;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,20 +25,5 @@ public interface ExerciseRepository extends JpaRepository<ExerciseEntity, String
 	// Busca todos os exercícios globais + customizados do usuário
 	@Query("SELECT e FROM ExerciseEntity e WHERE e.isCustom = false OR e.createdBy.id = :userId ORDER BY e.name ASC")
 	List<ExerciseEntity> findByIsCustomFalseOrCreatedById(@Param("userId") String userId);
-
-	// Busca apenas exercícios globais
-	List<ExerciseEntity> findByIsCustomFalseOrderByNameAsc();
-
-	// Busca apenas exercícios customizados do usuário
-	List<ExerciseEntity> findByCreatedByIdOrderByNameAsc(String userId);
-
-	// Busca por grupo muscular (apenas globais)
-	List<ExerciseEntity> findByMuscleGroupAndIsCustomFalseOrderByNameAsc(MuscleGroup muscleGroup);
-
-	// Busca por equipamento (apenas globais)
-	List<ExerciseEntity> findByEquipmentAndIsCustomFalseOrderByNameAsc(Equipment equipment);
-
-	// Busca por dificuldade (apenas globais)
-	List<ExerciseEntity> findByDifficultyAndIsCustomFalseOrderByNameAsc(Difficulty difficulty);
 
 }

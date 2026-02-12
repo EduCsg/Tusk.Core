@@ -6,8 +6,8 @@ import com.hydra.core.dtos.ResponseDto;
 import com.hydra.core.dtos.UserDto;
 import com.hydra.core.entity.UserEntity;
 import com.hydra.core.repository.UserRepository;
+import com.hydra.core.security.JwtService;
 import com.hydra.core.utils.BCrypt;
-import com.hydra.core.utils.JwtUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -22,6 +22,7 @@ import java.util.Optional;
 public class AuthService {
 
 	private final UserRepository userRepository;
+	private final JwtService jwtService;
 
 	ModelMapper mapper = new ModelMapper();
 
@@ -32,7 +33,7 @@ public class AuthService {
 	@Transactional
 	public ResponseEntity<ResponseDto> registerUser(UserDto userDto) {
 		ResponseDto responseDto = new ResponseDto();
-		Optional<UserEntity> existingUser = userRepository.findByEmailOrUsernameIgnoreCase(userDto.email(),
+		Optional<UserEntity> existingUser = userRepository.findByEmailIgnoreCaseOrUsernameIgnoreCase(userDto.email(),
 				userDto.username());
 
 		if (existingUser.isPresent()) {
@@ -50,7 +51,7 @@ public class AuthService {
 
 		userRepository.save(userEntity);
 
-		String jwtToken = JwtUtils.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
+		String jwtToken = jwtService.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
 				userEntity.getName());
 
 		AuthResponseDto authResponseDto = new AuthResponseDto(userEntity.getId(), jwtToken);
@@ -80,7 +81,7 @@ public class AuthService {
 			return ResponseEntity.status(401).body(responseDto);
 		}
 
-		String jwtToken = JwtUtils.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
+		String jwtToken = jwtService.generateToken(userEntity.getId(), userEntity.getUsername(), userEntity.getEmail(),
 				userEntity.getName());
 
 		AuthResponseDto authResponseDto = new AuthResponseDto(userEntity.getId(), jwtToken);

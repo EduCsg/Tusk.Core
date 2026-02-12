@@ -1,27 +1,28 @@
 package com.hydra.core.controller;
 
 import com.hydra.core.dtos.*;
+import com.hydra.core.security.JwtService;
 import com.hydra.core.service.WorkoutService;
-import com.hydra.core.utils.JwtUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/workouts")
 public class WorkoutController {
 
-	@Autowired
-	private WorkoutService workoutService;
+	private final WorkoutService workoutService;
+	private final JwtService jwtService;
 
 	@PostMapping("/weightlifting")
 	public ResponseEntity<ResponseDto> createWeightliftingWorkout(@RequestBody CreateWeightliftingWorkoutDto dto,
 			@RequestHeader("Authorization") String authorization) {
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto user = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto user = jwtService.parseTokenToUser(token);
 
 		WorkoutDto workout = workoutService.createWeightliftingWorkout(dto, user.id());
 
@@ -33,8 +34,8 @@ public class WorkoutController {
 	public ResponseEntity<ResponseDto> createRunningWorkout(@RequestBody CreateRunningWorkoutDto dto,
 			@RequestHeader("Authorization") String authorization) {
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto user = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto user = jwtService.parseTokenToUser(token);
 
 		WorkoutDto workout = workoutService.createRunningWorkout(dto, user.id());
 
@@ -46,8 +47,8 @@ public class WorkoutController {
 	public ResponseEntity<ResponseDto> createSwimmingWorkout(@RequestBody CreateSwimmingWorkoutDto dto,
 			@RequestHeader("Authorization") String authorization) {
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto user = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto user = jwtService.parseTokenToUser(token);
 
 		WorkoutDto workout = workoutService.createSwimmingWorkout(dto, user.id());
 
@@ -59,8 +60,8 @@ public class WorkoutController {
 	public ResponseEntity<ResponseDto> getTeamWorkouts(@PathVariable String teamId,
 			@RequestHeader("Authorization") String authorization) {
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto user = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto user = jwtService.parseTokenToUser(token);
 
 		List<WorkoutDto> workouts = workoutService.getTeamWorkouts(teamId, user.id());
 
@@ -72,8 +73,8 @@ public class WorkoutController {
 	public ResponseEntity<ResponseDto> getWorkout(@PathVariable String workoutId,
 			@RequestHeader("Authorization") String authorization) {
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto user = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto user = jwtService.parseTokenToUser(token);
 
 		WorkoutDto workout = workoutService.getWorkoutById(workoutId, user.id());
 
@@ -85,8 +86,8 @@ public class WorkoutController {
 	public ResponseEntity<ResponseDto> deleteWorkout(@PathVariable String workoutId,
 			@RequestHeader("Authorization") String authorization) {
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto user = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto user = jwtService.parseTokenToUser(token);
 
 		workoutService.deleteWorkout(workoutId, user.id());
 

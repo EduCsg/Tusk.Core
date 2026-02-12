@@ -9,7 +9,7 @@ import com.hydra.core.exceptions.UnauthorizedException;
 import com.hydra.core.repository.TeamMemberRepository;
 import com.hydra.core.repository.TeamRepository;
 import com.hydra.core.repository.UserRepository;
-import com.hydra.core.utils.JwtUtils;
+import com.hydra.core.security.JwtService;
 import com.hydra.core.utils.ValidationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -28,6 +28,7 @@ public class TeamService {
 	private final UserRepository userRepository;
 	private final TeamRepository teamRepository;
 	private final TeamMemberRepository teamMemberRepository;
+	private final JwtService jwtService;
 
 	@Transactional
 	public ResponseEntity<ResponseDto> createTeam(String authorization, CreateTeamDto dto) {
@@ -46,13 +47,13 @@ public class TeamService {
 
 		String token;
 		try {
-			token = JwtUtils.extractTokenFromHeader(authorization);
+			token = jwtService.extractTokenFromHeader(authorization);
 		} catch (UnauthorizedException ex) {
 			responseDto.setMessage(ex.getMessage());
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+		UserDto userByToken = jwtService.parseTokenToUser(token);
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
 			responseDto.setMessage("Token inválido ou usuário não autorizado!");
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
@@ -88,8 +89,8 @@ public class TeamService {
 
 	public ResponseEntity<ResponseDto> getTeamUsers(String authorization, String teamId) {
 		// Valida autenticação
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -129,8 +130,8 @@ public class TeamService {
 	public ResponseEntity<ResponseDto> getTeamDetails(String authorization, String teamId) {
 		ResponseDto responseDto = new ResponseDto();
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
 			responseDto.setMessage("Token inválido ou usuário não autorizado!");
@@ -168,8 +169,8 @@ public class TeamService {
 	public ResponseEntity<ResponseDto> getMainTeamOfUser(String authorization) {
 		ResponseDto responseDto = new ResponseDto();
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
 			responseDto.setMessage("Token inválido ou usuário não autorizado!");

@@ -11,7 +11,7 @@ import com.hydra.core.enums.TeamRole;
 import com.hydra.core.repository.TeamMemberRepository;
 import com.hydra.core.repository.TeamRepository;
 import com.hydra.core.repository.UserRepository;
-import com.hydra.core.utils.JwtUtils;
+import com.hydra.core.security.JwtService;
 import com.hydra.core.utils.ValidationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -33,6 +33,7 @@ public class InviteService {
 	private final TeamRepository teamRepository;
 	private final TeamMemberRepository teamMemberRepository;
 	private final EmailSender emailSender;
+	private final JwtService jwtService;
 
 	@Transactional
 	public ResponseEntity<ResponseDto> createInviteToken(String authorization, String teamId,
@@ -50,8 +51,8 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken)) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
@@ -96,7 +97,8 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
 		}
 
-		String inviteUrl = JwtUtils.generateTeamInviteUrl(teamId, athlete.get().getId(), coach.get().getId(), teamRole);
+		String inviteUrl = jwtService.generateTeamInviteUrl(teamId, athlete.get().getId(), coach.get().getId(),
+				teamRole);
 
 		responseDto.setSuccess(true);
 		responseDto.setData(inviteUrl);
@@ -114,15 +116,15 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
 			responseDto.setMessage("Token inválido ou usuário não autorizado!");
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
-		InviteTokenDto inviteData = JwtUtils.parseInviteToken(inviteToken);
+		InviteTokenDto inviteData = jwtService.parseInviteToken(inviteToken);
 
 		if (ValidationUtils.isEmpty(inviteData)) {
 			responseDto.setMessage("Token de convite inválido!");
@@ -197,10 +199,10 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
-		String token = JwtUtils.extractTokenFromHeader(authorization);
+		String token = jwtService.extractTokenFromHeader(authorization);
 
-		UserDto userByToken = JwtUtils.parseTokenToUser(token);
-		InviteTokenDto inviteData = JwtUtils.parseInviteToken(inviteToken);
+		UserDto userByToken = jwtService.parseTokenToUser(token);
+		InviteTokenDto inviteData = jwtService.parseInviteToken(inviteToken);
 
 		// Valida que quem está enviando é quem criou o convite
 		if (ValidationUtils.isAnyEmpty(userByToken.id(), inviteData.invitedBy()) || !userByToken.id()
@@ -251,7 +253,7 @@ public class InviteService {
 				() -> new EntityNotFoundException("Quem convidou não foi encontrado"));
 
 		// Gera URL do convite
-		String inviteUrl = JwtUtils.generateTeamInviteUrl(inviteToken);
+		String inviteUrl = jwtService.generateTeamInviteUrl(inviteToken);
 
 		// Carrega e personaliza o template
 		String template = loadInviteTemplate();

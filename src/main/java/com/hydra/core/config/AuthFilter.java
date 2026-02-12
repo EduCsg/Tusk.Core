@@ -1,11 +1,13 @@
 package com.hydra.core.config;
 
-import com.hydra.core.utils.JwtUtils;
+import com.hydra.core.security.JwtService;
 import com.hydra.core.utils.ValidationUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -15,16 +17,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class AuthFilter extends OncePerRequestFilter {
 
-	private static final String PUBLIC_TOKEN = System.getenv("PUBLIC_TOKEN");
+	private final JwtService jwtService;
+
+	@Value("${public.token}")
+	private String publicToken;
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response,
 			@NonNull FilterChain filterChain) throws ServletException, IOException {
 		String authorizationHeader = request.getHeader("Authorization");
 
-		if (ValidationUtils.notEmpty(authorizationHeader) && authorizationHeader.equals(PUBLIC_TOKEN)) {
+		if (ValidationUtils.notEmpty(authorizationHeader) && authorizationHeader.equals(publicToken)) {
 			filterChain.doFilter(request, response);
 			return;
 		}
@@ -36,8 +42,8 @@ public class AuthFilter extends OncePerRequestFilter {
 
 		String token = authorizationHeader.substring(7).trim();
 
-		if (ValidationUtils.notEmpty(token) && JwtUtils.validateToken(token)) {
-			JwtUtils.parseTokenToUser(token);
+		if (ValidationUtils.notEmpty(token) && jwtService.validateToken(token)) {
+			jwtService.parseTokenToUser(token);
 			filterChain.doFilter(request, response);
 		} else {
 			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
