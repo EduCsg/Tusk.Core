@@ -4,7 +4,7 @@ CREATE TABLE teams
     name        VARCHAR(50) NOT NULL,
     description VARCHAR(255),
     city        VARCHAR(100),
-    uf          CHAR(2),
+    uf          VARCHAR(2),
     color       VARCHAR(7)  NOT NULL,
     image_url   VARCHAR(255),
     updated_at  TIMESTAMP   NOT NULL,
