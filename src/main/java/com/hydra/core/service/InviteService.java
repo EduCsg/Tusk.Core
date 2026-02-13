@@ -29,6 +29,11 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class InviteService {
 
+	private static final String INVALID_TOKEN_MESSAGE = "Token inválido ou usuário não autorizado!";
+	private static final String USER_NOT_FOUND_MESSAGE = "Usuário não encontrado!";
+	private static final String TEAM_NOT_FOUND_MESSAGE = "Time não encontrado!";
+	private static final String INVALID_ROLE_MESSAGE = "Função inválida no convite!";
+
 	private final UserRepository userRepository;
 	private final TeamRepository teamRepository;
 	private final TeamMemberRepository teamMemberRepository;
@@ -65,7 +70,7 @@ public class InviteService {
 		Optional<TeamEntity> team = teamRepository.findById(teamId);
 
 		if (team.isEmpty()) {
-			responseDto.setMessage("Time não encontrado");
+			responseDto.setMessage(TEAM_NOT_FOUND_MESSAGE);
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseDto);
 		}
 
@@ -120,7 +125,7 @@ public class InviteService {
 		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
@@ -142,7 +147,7 @@ public class InviteService {
 		try {
 			role = TeamRole.valueOf(inviteData.role());
 		} catch (IllegalArgumentException e) {
-			responseDto.setMessage("Papel inválido no convite!");
+			responseDto.setMessage(INVALID_ROLE_MESSAGE);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
@@ -165,10 +170,10 @@ public class InviteService {
 
 		// Busca as entidades necessárias
 		TeamEntity team = teamRepository.findById(inviteData.teamId())
-										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(TEAM_NOT_FOUND_MESSAGE));
 
 		UserEntity user = userRepository.findById(inviteData.userId())
-										.orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
 		UserEntity inviter = userRepository.findById(inviteData.invitedBy()).orElseThrow(
 				() -> new EntityNotFoundException("Quem convidou não foi encontrado"));
@@ -207,7 +212,7 @@ public class InviteService {
 		// Valida que quem está enviando é quem criou o convite
 		if (ValidationUtils.isAnyEmpty(userByToken.id(), inviteData.invitedBy()) || !userByToken.id()
 																								.equals(inviteData.invitedBy())) {
-			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
@@ -216,7 +221,7 @@ public class InviteService {
 		try {
 			role = TeamRole.valueOf(inviteData.role());
 		} catch (IllegalArgumentException e) {
-			responseDto.setMessage("Papel inválido no convite!");
+			responseDto.setMessage(INVALID_ROLE_MESSAGE);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
@@ -238,8 +243,8 @@ public class InviteService {
 		}
 
 		// Busca as entidades necessárias
-		UserEntity invitedUser = userRepository.findById(inviteData.userId()).orElseThrow(
-				() -> new EntityNotFoundException("Usuário não encontrado"));
+		UserEntity invitedUser = userRepository.findById(inviteData.userId())
+											   .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
 		if (ValidationUtils.isEmpty(invitedUser.getEmail())) {
 			responseDto.setMessage("O usuário não possui um e-mail cadastrado!");
@@ -257,8 +262,6 @@ public class InviteService {
 
 		// Carrega e personaliza o template
 		String template = loadInviteTemplate();
-
-		String roleText = role == TeamRole.COACH ? "treinador(a)" : "atleta";
 
 		String html = template //
 							   .replace("{{teamImageUrl}}", team.getImageUrl()) //

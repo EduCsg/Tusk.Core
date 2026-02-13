@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +33,7 @@ public class ExerciseService {
 			exercises = exerciseRepository.findByIsCustomFalseOrCreatedById(userId);
 		}
 
-		return exercises.stream().map(this::mapToDto).collect(Collectors.toList());
+		return exercises.stream().map(this::mapToDto).toList();
 	}
 
 	// Criar exercício customizado

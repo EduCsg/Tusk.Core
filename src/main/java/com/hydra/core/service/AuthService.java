@@ -1,5 +1,6 @@
 package com.hydra.core.service;
 
+import com.hydra.core.config.ModelMapperConfig;
 import com.hydra.core.dtos.AuthResponseDto;
 import com.hydra.core.dtos.LoginDto;
 import com.hydra.core.dtos.ResponseDto;
@@ -9,25 +10,23 @@ import com.hydra.core.repository.UserRepository;
 import com.hydra.core.security.JwtService;
 import com.hydra.core.utils.BCrypt;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.config.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
 	private final UserRepository userRepository;
 	private final JwtService jwtService;
+	private final ModelMapper mapper;
 
-	ModelMapper mapper = new ModelMapper();
-
-	{
-		mapper.getConfiguration().setFieldMatchingEnabled(true).setFieldAccessLevel(Configuration.AccessLevel.PRIVATE);
+	AuthService(UserRepository userRepository, JwtService jwtService, ModelMapperConfig modelMapperConfig) {
+		this.userRepository = userRepository;
+		this.jwtService = jwtService;
+		this.mapper = modelMapperConfig.modelMapper();
 	}
 
 	@Transactional

@@ -25,6 +25,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TeamService {
 
+	private static final String INVALID_TOKEN_MESSAGE = "Token inválido ou usuário não autorizado!";
+	private static final String USER_NOT_FOUND_MESSAGE = "Usuário não encontrado!";
+	private static final String TEAM_NOT_FOUND_MESSAGE = "Time não encontrado!";
+
 	private final UserRepository userRepository;
 	private final TeamRepository teamRepository;
 	private final TeamMemberRepository teamMemberRepository;
@@ -55,12 +59,12 @@ public class TeamService {
 
 		UserDto userByToken = jwtService.parseTokenToUser(token);
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
 		UserEntity creator = userRepository.findById(userByToken.id())
-										   .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+										   .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
 		TeamEntity team = new TeamEntity();
 		team.setName(dto.name());
@@ -93,13 +97,12 @@ public class TeamService {
 		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-								 .body(new ResponseDto("Token inválido ou usuário não autorizado!"));
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ResponseDto(INVALID_TOKEN_MESSAGE));
 		}
 
 		// Verifica se o time existe
 		TeamEntity team = teamRepository.findById(teamId)
-										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(TEAM_NOT_FOUND_MESSAGE));
 
 		// Verifica se o usuário é membro do time
 		Optional<TeamMemberEntity> userMembership = teamMemberRepository.findByTeamIdAndUserId(teamId,
@@ -134,18 +137,18 @@ public class TeamService {
 		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
 		Optional<TeamEntity> teamOpt = teamRepository.findById(teamId);
 		if (teamOpt.isEmpty()) {
-			responseDto.setMessage("Time não encontrado");
+			responseDto.setMessage(TEAM_NOT_FOUND_MESSAGE);
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseDto);
 		}
 
 		UserEntity userEntity = userRepository.findById(userByToken.id())
-											  .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+											  .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
 		TeamMemberEntity teamMember = teamMemberRepository.findFirstByUserAndTeam(userEntity, teamOpt.get());
 
@@ -173,12 +176,12 @@ public class TeamService {
 		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage("Token inválido ou usuário não autorizado!");
+			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
 		UserEntity userEntity = userRepository.findById(userByToken.id())
-											  .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+											  .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
 		TeamMemberEntity teamMember = teamMemberRepository.findFirstByUserOrderByJoinedAtAsc(userEntity);
 

@@ -57,13 +57,9 @@ public class WorkoutController {
 	}
 
 	@GetMapping("/team/{teamId}")
-	public ResponseEntity<ResponseDto> getTeamWorkouts(@PathVariable String teamId,
-			@RequestHeader("Authorization") String authorization) {
+	public ResponseEntity<ResponseDto> getTeamWorkouts(@PathVariable String teamId) {
 
-		String token = jwtService.extractTokenFromHeader(authorization);
-		UserDto user = jwtService.parseTokenToUser(token);
-
-		List<WorkoutDto> workouts = workoutService.getTeamWorkouts(teamId, user.id());
+		List<WorkoutDto> workouts = workoutService.getTeamWorkouts(teamId);
 
 		ResponseDto response = new ResponseDto("Treinos do time encontrados com sucesso!", workouts);
 		return ResponseEntity.ok(response);

@@ -5,6 +5,10 @@ import java.util.List;
 
 public class ValidationUtils {
 
+	ValidationUtils() {
+		throw new IllegalStateException("Utility class");
+	}
+
 	public static boolean isEmpty(String str) {
 		return str == null || str.isBlank();
 	}

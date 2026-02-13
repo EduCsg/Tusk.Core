@@ -16,6 +16,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WorkoutService {
 
+	private static final String TEAM_NOT_FOUND_MESSAGE = "Time não encontrado";
+	private static final String USER_NOT_FOUND_MESSAGE = "Usuário não encontrado";
+	private static final String NOT_TEAM_MEMBER_MESSAGE = "Você não é membro deste time";
+	private static final String ONLY_COACH_OWNER_MESSAGE = "Apenas coaches e owners podem criar treinos";
+	private static final String WORKOUT_NOT_FOUND_MESSAGE = "Treino não encontrado";
+
 	private final WorkoutRepository workoutRepository;
 	private final TeamRepository teamRepository;
 	private final UserRepository userRepository;
@@ -43,16 +49,16 @@ public class WorkoutService {
 	public WorkoutDto createWeightliftingWorkout(CreateWeightliftingWorkoutDto dto, String userId) {
 		// Valida se o usuário é coach/owner do time
 		TeamEntity team = teamRepository.findById(dto.teamId())
-										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(TEAM_NOT_FOUND_MESSAGE));
 
 		UserEntity user = userRepository.findById(userId)
-										.orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
 		TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(dto.teamId(), userId).orElseThrow(
-				() -> new RuntimeException("Você não é membro deste time"));
+				() -> new RuntimeException(NOT_TEAM_MEMBER_MESSAGE));
 
 		if (membership.getRole() != TeamRole.OWNER && membership.getRole() != TeamRole.COACH) {
-			throw new RuntimeException("Apenas coaches e owners podem criar treinos");
+			throw new RuntimeException(ONLY_COACH_OWNER_MESSAGE);
 		}
 
 		// Cria o treino
@@ -107,16 +113,16 @@ public class WorkoutService {
 	@Transactional
 	public WorkoutDto createRunningWorkout(CreateRunningWorkoutDto dto, String userId) {
 		TeamEntity team = teamRepository.findById(dto.teamId())
-										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(TEAM_NOT_FOUND_MESSAGE));
 
 		UserEntity user = userRepository.findById(userId)
-										.orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
 		TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(dto.teamId(), userId).orElseThrow(
-				() -> new RuntimeException("Você não é membro deste time"));
+				() -> new RuntimeException(NOT_TEAM_MEMBER_MESSAGE));
 
 		if (membership.getRole() != TeamRole.OWNER && membership.getRole() != TeamRole.COACH) {
-			throw new RuntimeException("Apenas coaches e owners podem criar treinos");
+			throw new RuntimeException(ONLY_COACH_OWNER_MESSAGE);
 		}
 
 		WorkoutEntity workout = new WorkoutEntity();
@@ -144,16 +150,16 @@ public class WorkoutService {
 	@Transactional
 	public WorkoutDto createSwimmingWorkout(CreateSwimmingWorkoutDto dto, String userId) {
 		TeamEntity team = teamRepository.findById(dto.teamId())
-										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(TEAM_NOT_FOUND_MESSAGE));
 
 		UserEntity user = userRepository.findById(userId)
-										.orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+										.orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
 
 		TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(dto.teamId(), userId).orElseThrow(
-				() -> new RuntimeException("Você não é membro deste time"));
+				() -> new RuntimeException(NOT_TEAM_MEMBER_MESSAGE));
 
 		if (membership.getRole() != TeamRole.OWNER && membership.getRole() != TeamRole.COACH) {
-			throw new RuntimeException("Apenas coaches e owners podem criar treinos");
+			throw new RuntimeException(ONLY_COACH_OWNER_MESSAGE);
 		}
 
 		WorkoutEntity workout = new WorkoutEntity();
@@ -190,18 +196,14 @@ public class WorkoutService {
 		return mapToDto(saved);
 	}
 
-	public List<WorkoutDto> getTeamWorkouts(String teamId, String userId) {
-		// Valida se o usuário é membro do time
-		TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(teamId, userId).orElseThrow(
-				() -> new RuntimeException("Você não é membro deste time"));
-
+	public List<WorkoutDto> getTeamWorkouts(String teamId) {
 		List<WorkoutEntity> workouts = workoutRepository.findByTeamIdOrderByScheduledDateDesc(teamId);
-		return workouts.stream().map(this::mapToDto).collect(java.util.stream.Collectors.toList());
+		return workouts.stream().map(this::mapToDto).toList();
 	}
 
 	public WorkoutDto getWorkoutById(String workoutId, String userId) {
 		WorkoutEntity workout = workoutRepository.findById(workoutId).orElseThrow(
-				() -> new EntityNotFoundException("Treino não encontrado"));
+				() -> new EntityNotFoundException(WORKOUT_NOT_FOUND_MESSAGE));
 
 		// Valida se o usuário é membro do time
 		teamMemberRepository.findByTeamIdAndUserId(workout.getTeam().getId(), userId)
@@ -213,12 +215,12 @@ public class WorkoutService {
 	@Transactional
 	public void deleteWorkout(String workoutId, String userId) {
 		WorkoutEntity workout = workoutRepository.findById(workoutId).orElseThrow(
-				() -> new EntityNotFoundException("Treino não encontrado"));
+				() -> new EntityNotFoundException(WORKOUT_NOT_FOUND_MESSAGE));
 
 		// Valida se o usuário é coach/owner do time
 		TeamMemberEntity membership = teamMemberRepository.findByTeamIdAndUserId(workout.getTeam().getId(), userId)
-														  .orElseThrow(() -> new RuntimeException(
-																  "Você não é membro deste time"));
+														  .orElseThrow(
+																  () -> new RuntimeException(NOT_TEAM_MEMBER_MESSAGE));
 
 		if (membership.getRole() != TeamRole.OWNER && membership.getRole() != TeamRole.COACH) {
 			throw new RuntimeException("Apenas coaches e owners podem deletar treinos");

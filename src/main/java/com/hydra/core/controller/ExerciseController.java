@@ -18,6 +18,8 @@ import java.util.List;
 @RequestMapping("/api/exercises")
 public class ExerciseController {
 
+	private static final String EXERCISES_FOUND_MESSAGE = "Exercícios encontrados com sucesso";
+
 	private final ExerciseService exerciseService;
 	private final JwtService jwtService;
 
@@ -31,7 +33,7 @@ public class ExerciseController {
 
 		List<ExerciseDto> exercises = exerciseService.searchExercises(query, muscleGroup, user.id());
 
-		ResponseDto response = new ResponseDto("Exercícios encontrados com sucesso", exercises);
+		ResponseDto response = new ResponseDto(EXERCISES_FOUND_MESSAGE, exercises);
 		return ResponseEntity.ok(response);
 	}
 
@@ -44,7 +46,7 @@ public class ExerciseController {
 
 		ExerciseDto exercise = exerciseService.createCustomExercise(dto, user.id());
 
-		ResponseDto response = new ResponseDto("Exercícios encontrados com sucesso", exercise);
+		ResponseDto response = new ResponseDto(EXERCISES_FOUND_MESSAGE, exercise);
 		return ResponseEntity.ok(response);
 	}
 
@@ -52,7 +54,7 @@ public class ExerciseController {
 	public ResponseEntity<ResponseDto> getExercise(@PathVariable String exerciseId) {
 		ExerciseDto exercise = exerciseService.getExerciseById(exerciseId);
 
-		ResponseDto response = new ResponseDto("Exercícios encontrados com sucesso", exercise);
+		ResponseDto response = new ResponseDto(EXERCISES_FOUND_MESSAGE, exercise);
 		return ResponseEntity.ok(response);
 	}
 

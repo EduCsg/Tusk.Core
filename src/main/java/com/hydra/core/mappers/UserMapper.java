@@ -5,18 +5,14 @@ import com.hydra.core.entity.UserEntity;
 import com.hydra.core.utils.ValidationUtils;
 
 import java.util.List;
-import java.util.Set;
 
 public class UserMapper {
 
-	public static List<UserDto> entitiesToDtos(List<UserEntity> entities) {
-		if (ValidationUtils.isEmpty(entities))
-			return List.of();
-
-		return entities.stream().map(UserMapper::entityToDto).toList();
+	UserMapper() {
+		throw new UnsupportedOperationException("Utility class");
 	}
 
-	public static List<UserDto> entitiesToDtos(Set<UserEntity> entities) {
+	public static List<UserDto> entitiesToDtos(List<UserEntity> entities) {
 		if (ValidationUtils.isEmpty(entities))
 			return List.of();
 
