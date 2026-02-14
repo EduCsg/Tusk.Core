@@ -25,7 +25,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TeamService {
 
-	private static final String INVALID_TOKEN_MESSAGE = "Token inválido ou usuário não autorizado!";
 	private static final String USER_NOT_FOUND_MESSAGE = "Usuário não encontrado!";
 	private static final String TEAM_NOT_FOUND_MESSAGE = "Time não encontrado!";
 
@@ -58,10 +57,6 @@ public class TeamService {
 		}
 
 		UserDto userByToken = jwtService.parseTokenToUser(token);
-		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
 
 		UserEntity creator = userRepository.findById(userByToken.id())
 										   .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
@@ -95,10 +90,6 @@ public class TeamService {
 		// Valida autenticação
 		String token = jwtService.extractTokenFromHeader(authorization);
 		UserDto userByToken = jwtService.parseTokenToUser(token);
-
-		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ResponseDto(INVALID_TOKEN_MESSAGE));
-		}
 
 		// Verifica se o time existe
 		TeamEntity team = teamRepository.findById(teamId)
@@ -136,11 +127,6 @@ public class TeamService {
 		String token = jwtService.extractTokenFromHeader(authorization);
 		UserDto userByToken = jwtService.parseTokenToUser(token);
 
-		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
-
 		Optional<TeamEntity> teamOpt = teamRepository.findById(teamId);
 		if (teamOpt.isEmpty()) {
 			responseDto.setMessage(TEAM_NOT_FOUND_MESSAGE);
@@ -174,11 +160,6 @@ public class TeamService {
 
 		String token = jwtService.extractTokenFromHeader(authorization);
 		UserDto userByToken = jwtService.parseTokenToUser(token);
-
-		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
 
 		UserEntity userEntity = userRepository.findById(userByToken.id())
 											  .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));

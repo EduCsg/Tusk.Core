@@ -59,10 +59,6 @@ public class InviteService {
 		String token = jwtService.extractTokenFromHeader(authorization);
 		UserDto userByToken = jwtService.parseTokenToUser(token);
 
-		if (ValidationUtils.isEmpty(userByToken)) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
-
 		if (!userByToken.id().equals(request.coachId())) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
 		}
@@ -121,20 +117,16 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
 
-		String token = jwtService.extractTokenFromHeader(authorization);
-		UserDto userByToken = jwtService.parseTokenToUser(token);
-
-		if (ValidationUtils.isEmpty(userByToken) || ValidationUtils.isEmpty(userByToken.id())) {
-			responseDto.setMessage(INVALID_TOKEN_MESSAGE);
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
-		}
-
 		InviteTokenDto inviteData = jwtService.parseInviteToken(inviteToken);
 
-		if (ValidationUtils.isEmpty(inviteData)) {
+		if (inviteData == null || ValidationUtils.isAnyEmpty(inviteData.teamId(), inviteData.userId(),
+				inviteData.role(), inviteData.invitedBy())) {
 			responseDto.setMessage("Token de convite inválido!");
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
+
+		String token = jwtService.extractTokenFromHeader(authorization);
+		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		// Valida que o token é para o usuário logado
 		if (!userByToken.id().equals(inviteData.userId())) {

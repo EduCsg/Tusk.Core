@@ -3,6 +3,7 @@ package com.hydra.core.security;
 import com.hydra.core.dtos.InviteTokenDto;
 import com.hydra.core.dtos.UserDto;
 import com.hydra.core.enums.TeamRole;
+import com.hydra.core.exceptions.InvalidTokenException;
 import com.hydra.core.exceptions.UnauthorizedException;
 import com.hydra.core.utils.ValidationUtils;
 import io.jsonwebtoken.Claims;
@@ -77,14 +78,19 @@ public class JwtService {
 	}
 
 	public UserDto parseTokenToUser(String token) {
-		Claims payload = jwtParser.parseSignedClaims(token).getPayload();
+		try {
+			Claims payload = jwtParser.parseSignedClaims(token).getPayload();
 
-		String userId = payload.get("userId", String.class);
-		String username = payload.get("username", String.class);
-		String email = payload.get("email", String.class);
-		String name = payload.get("name", String.class);
+			String userId = payload.get("userId", String.class);
 
-		return new UserDto(userId, token, username, name, email, null);
+			if (ValidationUtils.isEmpty(userId))
+				throw new InvalidTokenException();
+
+			return new UserDto(userId, token, payload.get("username", String.class), payload.get("name", String.class),
+					payload.get("email", String.class), null);
+		} catch (Exception _) {
+			throw new InvalidTokenException();
+		}
 	}
 
 	public String generateTeamInviteUrl(String teamId, String athleteId, String coachId, TeamRole role) {

@@ -32,4 +32,10 @@ public class CustomExceptionsHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 	}
 
+	@ExceptionHandler(InvalidTokenException.class)
+	public ResponseEntity<ResponseDto> handleInvalidToken(InvalidTokenException ex) {
+		ResponseDto response = new ResponseDto(ex.getMessage());
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+	}
+
 }
