@@ -97,4 +97,9 @@ class ValidationUtilsTest {
 		assertFalse(ValidationUtils.isAnyEmpty());
 	}
 
+	@Test
+	void isAnyEmpty_shouldReturnTrue_whenSecondElementIsEmpty() {
+		assertTrue(ValidationUtils.isAnyEmpty("valid", "", "another"));
+	}
+
 }
