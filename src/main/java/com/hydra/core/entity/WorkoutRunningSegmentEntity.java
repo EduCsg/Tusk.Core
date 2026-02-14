@@ -1,7 +1,7 @@
 package com.hydra.core.entity;
 
-import com.hydra.core.enums.RunningIntensity;
 import com.hydra.core.enums.RunningSegmentType;
+import com.hydra.core.enums.WorkoutIntensity;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -40,7 +40,7 @@ public class WorkoutRunningSegmentEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(length = 20)
-	private RunningIntensity intensity;
+	private WorkoutIntensity intensity;
 
 	@Column(columnDefinition = "TEXT")
 	private String notes;
