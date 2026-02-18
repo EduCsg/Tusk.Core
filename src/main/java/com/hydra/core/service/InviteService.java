@@ -138,7 +138,7 @@ public class InviteService {
 		TeamRole role;
 		try {
 			role = TeamRole.valueOf(inviteData.role());
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException _) {
 			responseDto.setMessage(INVALID_ROLE_MESSAGE);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
@@ -212,7 +212,7 @@ public class InviteService {
 		TeamRole role;
 		try {
 			role = TeamRole.valueOf(inviteData.role());
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException _) {
 			responseDto.setMessage(INVALID_ROLE_MESSAGE);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}

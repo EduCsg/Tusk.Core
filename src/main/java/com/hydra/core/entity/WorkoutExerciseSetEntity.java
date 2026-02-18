@@ -23,7 +23,7 @@ public class WorkoutExerciseSetEntity {
 	private Integer setNumber;
 
 	@Column(nullable = false, length = 20)
-	private String reps; // "12", "10-12", "até falha"
+	private int reps; // "12", "10-12", "até falha"
 
 	@Column(precision = 6, scale = 2)
 	private BigDecimal weight; // em kg

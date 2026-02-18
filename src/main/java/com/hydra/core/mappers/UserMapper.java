@@ -20,6 +20,9 @@ public class UserMapper {
 	}
 
 	public static UserDto entityToDto(UserEntity entity) {
+		if (entity == null)
+			return null;
+
 		return new UserDto(entity.getId(), null, entity.getUsername(), entity.getName(), entity.getEmail(), null);
 	}
 

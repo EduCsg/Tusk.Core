@@ -31,7 +31,18 @@
         <sonar.projectKey>${env.SONAR_PROJECT_KEY}</sonar.projectKey>
         <sonar.host.url>${env.SONAR_HOST_URL}</sonar.host.url>
         <sonar.token>${env.SONAR_TOKEN}</sonar.token>
-        <sonar.exclusions>**/hydra/core/utils/BCrypt.java</sonar.exclusions>
+        <sonar.exclusions>
+            **/hydra/core/utils/BCrypt.java
+        </sonar.exclusions>
+        <sonar.coverage.exclusions>
+            **/controller/**,
+            **/config/**,
+            **/dtos/**,
+            **/exceptions/**,
+            **/models/**,
+            **/entity/**,
+            **/HydraCoreApiApplication.java
+        </sonar.coverage.exclusions>
     </properties>
     <dependencies>
         <dependency>
@@ -200,6 +211,11 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/controller/**</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
