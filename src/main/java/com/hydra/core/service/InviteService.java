@@ -1,13 +1,13 @@
 package com.hydra.core.service;
 
-import com.hydra.core.dtos.InviteTokenDto;
-import com.hydra.core.dtos.ResponseDto;
-import com.hydra.core.dtos.TeamInviteRequestDto;
-import com.hydra.core.dtos.UserDto;
+import com.hydra.core.dtos.*;
 import com.hydra.core.entity.TeamEntity;
 import com.hydra.core.entity.TeamMemberEntity;
 import com.hydra.core.entity.UserEntity;
 import com.hydra.core.enums.TeamRole;
+import com.hydra.core.exceptions.InvalidRoleException;
+import com.hydra.core.exceptions.OwnerInviteNotAllowedException;
+import com.hydra.core.exceptions.UserAlreadyInTeamException;
 import com.hydra.core.repository.TeamMemberRepository;
 import com.hydra.core.repository.TeamRepository;
 import com.hydra.core.repository.UserRepository;
@@ -32,7 +32,6 @@ public class InviteService {
 	static final String INVALID_TOKEN_MESSAGE = "Token inválido ou usuário não autorizado!";
 	static final String USER_NOT_FOUND_MESSAGE = "Usuário não encontrado!";
 	static final String TEAM_NOT_FOUND_MESSAGE = "Time não encontrado!";
-	static final String INVALID_ROLE_MESSAGE = "Função inválida no convite!";
 
 	private final UserRepository userRepository;
 	private final TeamRepository teamRepository;
@@ -135,55 +134,21 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
 		}
 
-		// Valida se a role é válida
-		TeamRole role;
-		try {
-			role = TeamRole.valueOf(inviteData.role());
-		} catch (IllegalArgumentException _) {
-			responseDto.setMessage(INVALID_ROLE_MESSAGE);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
-		}
-
-		// Não permite convite para OWNER via token
-		if (role == TeamRole.OWNER) {
-			responseDto.setMessage("Não é possível aceitar convite como proprietário!");
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
-		}
-
-		// Verifica se já é membro do time
-		Optional<TeamMemberEntity> alreadyExists = teamMemberRepository.findByTeamIdAndUserId(inviteData.teamId(),
-				inviteData.userId());
-
-		if (alreadyExists.isPresent()) {
-			String teamName = alreadyExists.get().getTeam().getName();
-			String currentRole = alreadyExists.get().getRole().getLabel();
-			responseDto.setMessage("Você já faz parte da equipe " + teamName + " como " + currentRole + "!");
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(responseDto);
-		}
-
-		// Busca as entidades necessárias
-		TeamEntity team = teamRepository.findById(inviteData.teamId())
-										.orElseThrow(() -> new EntityNotFoundException(TEAM_NOT_FOUND_MESSAGE));
-
-		UserEntity user = userRepository.findById(inviteData.userId())
-										.orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
-
-		UserEntity inviter = userRepository.findById(inviteData.invitedBy()).orElseThrow(
-				() -> new EntityNotFoundException("Quem convidou não foi encontrado"));
+		InviteValidationContext context = validateInvite(inviteData);
 
 		// Cria o novo membro
 		TeamMemberEntity newMember = new TeamMemberEntity();
-		newMember.setTeam(team);
-		newMember.setUser(user);
-		newMember.setRole(role);
-		newMember.setInvitedBy(inviter);
+		newMember.setTeam(context.team());
+		newMember.setUser(context.invitedUser());
+		newMember.setRole(context.role());
+		newMember.setInvitedBy(context.inviter());
 
 		teamMemberRepository.save(newMember);
 
 		responseDto.setSuccess(true);
-		String roleMessage = role == TeamRole.COACH ? "treinador(a)" : "atleta";
-		responseDto.setMessage(
-				"Boas vindas a equipe! Agora você é um(a) " + roleMessage + " do time " + team.getName() + "!");
+		String roleMessage = context.role() == TeamRole.COACH ? "treinador(a)" : "atleta";
+		responseDto.setMessage("Boas vindas a equipe! Agora você é um(a) " + roleMessage + " do time " + context.team()
+																												.getName() + "!");
 
 		return ResponseEntity.ok(responseDto);
 	}
@@ -209,43 +174,12 @@ public class InviteService {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseDto);
 		}
 
-		// Valida se a role é válida
-		TeamRole role;
-		try {
-			role = TeamRole.valueOf(inviteData.role());
-		} catch (IllegalArgumentException _) {
-			responseDto.setMessage(INVALID_ROLE_MESSAGE);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
-		}
+		InviteValidationContext context = validateInvite(inviteData);
 
-		// Não permite convite para OWNER via token
-		if (role == TeamRole.OWNER) {
-			responseDto.setMessage("Não é possível enviar convite como proprietário!");
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
-		}
-
-		// Verifica se já é membro do time
-		Optional<TeamMemberEntity> alreadyExists = teamMemberRepository.findByTeamIdAndUserId(inviteData.teamId(),
-				inviteData.userId());
-
-		if (alreadyExists.isPresent()) {
-			String teamName = alreadyExists.get().getTeam().getName();
-			String currentRole = alreadyExists.get().getRole().getLabel();
-			responseDto.setMessage("O usuário já faz parte da equipe " + teamName + " como " + currentRole + "!");
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(responseDto);
-		}
-
-		// Busca as entidades necessárias
-		UserEntity invitedUser = userRepository.findById(inviteData.userId())
-											   .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
-
-		if (ValidationUtils.isEmpty(invitedUser.getEmail())) {
+		if (ValidationUtils.isEmpty(context.invitedUser().getEmail())) {
 			responseDto.setMessage("O usuário não possui um e-mail cadastrado!");
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDto);
 		}
-
-		TeamEntity team = teamRepository.findById(inviteData.teamId())
-										.orElseThrow(() -> new EntityNotFoundException("Time não encontrado"));
 
 		UserEntity inviter = userRepository.findById(inviteData.invitedBy()).orElseThrow(
 				() -> new EntityNotFoundException("Quem convidou não foi encontrado"));
@@ -257,15 +191,15 @@ public class InviteService {
 		String template = loadInviteTemplate("/templates/email-invite.html");
 
 		String html = template //
-							   .replace("{{teamImageUrl}}", team.getImageUrl()) //
-							   .replace("{{teamName}}", team.getName()) //
+							   .replace("{{teamImageUrl}}", context.team().getImageUrl()) //
+							   .replace("{{teamName}}", context.team().getName()) //
 							   .replace("{{inviterName}}", inviter.getName()) //
 							   .replace("{{inviterEmail}}", inviter.getEmail()) //
 							   .replace("{{inviteUrl}}", inviteUrl) //
-							   .replace("{{userName}}", invitedUser.getName());
+							   .replace("{{userName}}", context.invitedUser().getName());
 
-		String subject = "Convite para o time " + team.getName();
-		emailSender.sendHtmlMail(invitedUser.getEmail(), subject, html);
+		String subject = "Convite para o time " + context.team().getName();
+		emailSender.sendHtmlMail(context.invitedUser().getEmail(), subject, html);
 
 		responseDto.setSuccess(true);
 		responseDto.setMessage("Convite enviado por e-mail com sucesso!");
@@ -279,6 +213,40 @@ public class InviteService {
 			}
 			return new String(is.readAllBytes(), StandardCharsets.UTF_8);
 		}
+	}
+
+	private InviteValidationContext validateInvite(InviteTokenDto inviteData) {
+
+		TeamRole role;
+		try {
+			role = TeamRole.valueOf(inviteData.role());
+		} catch (IllegalArgumentException _) {
+			throw new InvalidRoleException();
+		}
+
+		if (role == TeamRole.OWNER) {
+			throw new OwnerInviteNotAllowedException();
+		}
+
+		Optional<TeamMemberEntity> alreadyExists = teamMemberRepository.findByTeamIdAndUserId(inviteData.teamId(),
+				inviteData.userId());
+
+		if (alreadyExists.isPresent()) {
+			String teamName = alreadyExists.get().getTeam().getName();
+			String currentRole = alreadyExists.get().getRole().getLabel();
+			throw new UserAlreadyInTeamException(teamName, currentRole);
+		}
+
+		TeamEntity team = teamRepository.findById(inviteData.teamId())
+										.orElseThrow(() -> new EntityNotFoundException(TEAM_NOT_FOUND_MESSAGE));
+
+		UserEntity invitedUser = userRepository.findById(inviteData.userId())
+											   .orElseThrow(() -> new EntityNotFoundException(USER_NOT_FOUND_MESSAGE));
+
+		UserEntity inviter = userRepository.findById(inviteData.invitedBy()).orElseThrow(
+				() -> new EntityNotFoundException("Quem convidou não foi encontrado"));
+
+		return new InviteValidationContext(role, team, invitedUser, inviter);
 	}
 
 }

@@ -20,8 +20,8 @@ public class CustomExceptionsHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 
-	@ExceptionHandler(UnauthorizedException.class)
-	public ResponseEntity<ResponseDto> handleUnauthorized(UnauthorizedException ex) {
+	@ExceptionHandler({ UnauthorizedException.class, InvalidTokenException.class })
+	public ResponseEntity<ResponseDto> handleUnauthorized(RuntimeException ex) {
 		ResponseDto response = new ResponseDto(ex.getMessage());
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
 	}
@@ -32,10 +32,11 @@ public class CustomExceptionsHandler {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
 	}
 
-	@ExceptionHandler(InvalidTokenException.class)
-	public ResponseEntity<ResponseDto> handleInvalidToken(InvalidTokenException ex) {
+	@ExceptionHandler({ InvalidRoleException.class, OwnerInviteNotAllowedException.class,
+			UserAlreadyInTeamException.class })
+	public ResponseEntity<ResponseDto> handleInvalidRole(RuntimeException ex) {
 		ResponseDto response = new ResponseDto(ex.getMessage());
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
 	}
 
 }

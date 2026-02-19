@@ -8,6 +8,9 @@ import com.hydra.core.entity.TeamEntity;
 import com.hydra.core.entity.TeamMemberEntity;
 import com.hydra.core.entity.UserEntity;
 import com.hydra.core.enums.TeamRole;
+import com.hydra.core.exceptions.InvalidRoleException;
+import com.hydra.core.exceptions.OwnerInviteNotAllowedException;
+import com.hydra.core.exceptions.UserAlreadyInTeamException;
 import com.hydra.core.repository.TeamMemberRepository;
 import com.hydra.core.repository.TeamRepository;
 import com.hydra.core.repository.UserRepository;
@@ -370,14 +373,18 @@ class InviteServiceTest {
 
 		@Test
 		void whenLoggedUserDoesNotMatchInviteUserId_returnsForbidden() {
-			when(jwtService.parseInviteToken(INVITE_TOKEN)).thenReturn(inviteTokenDto());
+
+			InviteTokenDto invite = new InviteTokenDto(TEAM_ID, "invite-user-id", COACH_ID, "ATHLETE");
+
+			when(jwtService.parseInviteToken(INVITE_TOKEN)).thenReturn(invite);
 			when(jwtService.extractTokenFromHeader(AUTH)).thenReturn(TOKEN);
-			when(jwtService.parseTokenToUser(TOKEN)).thenReturn(new UserDto("other", TOKEN, "x", "X", "x@x.com", null));
+			when(jwtService.parseTokenToUser(TOKEN)).thenReturn(
+					new UserDto("logged-user-id", TOKEN, "x", "X", "x@x.com", null));
 
 			ResponseEntity<ResponseDto> response = inviteService.acceptInviteToken(AUTH, INVITE_TOKEN);
 
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
 			assertNotNull(response.getBody());
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
 			assertThat(response.getBody().getMessage()).isEqualTo("Você não pode aceitar esse convite!");
 		}
 
@@ -387,11 +394,8 @@ class InviteServiceTest {
 					new InviteTokenDto(TEAM_ID, ATHLETE_ID, COACH_ID, "INVALID"));
 			mockAthleteAuth();
 
-			ResponseEntity<ResponseDto> response = inviteService.acceptInviteToken(AUTH, INVITE_TOKEN);
-
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-			assertNotNull(response.getBody());
-			assertThat(response.getBody().getMessage()).isEqualTo("Função inválida no convite!");
+			assertThatThrownBy(() -> inviteService.acceptInviteToken(AUTH, INVITE_TOKEN)).isInstanceOf(
+					InvalidRoleException.class).hasMessageContaining("Função inválida no convite!");
 		}
 
 		@Test
@@ -400,11 +404,8 @@ class InviteServiceTest {
 					new InviteTokenDto(TEAM_ID, ATHLETE_ID, COACH_ID, "OWNER"));
 			mockAthleteAuth();
 
-			ResponseEntity<ResponseDto> response = inviteService.acceptInviteToken(AUTH, INVITE_TOKEN);
-
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-			assertNotNull(response.getBody());
-			assertThat(response.getBody().getMessage()).contains("proprietário");
+			assertThatThrownBy(() -> inviteService.acceptInviteToken(AUTH, INVITE_TOKEN)).isInstanceOf(
+					OwnerInviteNotAllowedException.class).hasMessageContaining("Não é possível usar OWNER via token!");
 		}
 
 		@Test
@@ -423,12 +424,9 @@ class InviteServiceTest {
 			mockAthleteAuth();
 			when(teamMemberRepository.findByTeamIdAndUserId(TEAM_ID, ATHLETE_ID)).thenReturn(Optional.of(existing));
 
-			ResponseEntity<ResponseDto> response = inviteService.acceptInviteToken(AUTH, INVITE_TOKEN);
-
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-			assertNotNull(response.getBody());
-			assertThat(response.getBody().getMessage()).contains("já faz parte").contains("Hydra FC")
-													   .contains(TeamRole.ATHLETE.getLabel());
+			assertThatThrownBy(() -> inviteService.acceptInviteToken(AUTH, INVITE_TOKEN)).isInstanceOf(
+					UserAlreadyInTeamException.class).hasMessageContaining(
+					"Usuário já faz parte da equipe Hydra FC como Atleta!");
 		}
 
 		@Test
@@ -559,33 +557,27 @@ class InviteServiceTest {
 		}
 
 		@Test
-		void whenRoleIsInvalid_returnsBadRequest() throws IOException {
+		void whenRoleIsInvalid_returnsBadRequest() {
 			mockCoachAuth();
 			when(jwtService.parseInviteToken(INVITE_TOKEN)).thenReturn(
 					new InviteTokenDto(TEAM_ID, ATHLETE_ID, COACH_ID, "INVALID"));
 
-			ResponseEntity<ResponseDto> response = inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN);
-
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-			assertNotNull(response.getBody());
-			assertThat(response.getBody().getMessage()).isEqualTo("Função inválida no convite!");
+			assertThatThrownBy(() -> inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN)).isInstanceOf(
+					InvalidRoleException.class).hasMessageContaining("Função inválida no convite!");
 		}
 
 		@Test
-		void whenRoleIsOwner_returnsForbidden() throws IOException {
+		void whenRoleIsOwner_returnsForbidden() {
 			mockCoachAuth();
 			when(jwtService.parseInviteToken(INVITE_TOKEN)).thenReturn(
 					new InviteTokenDto(TEAM_ID, ATHLETE_ID, COACH_ID, "OWNER"));
 
-			ResponseEntity<ResponseDto> response = inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN);
-
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-			assertNotNull(response.getBody());
-			assertThat(response.getBody().getMessage()).contains("proprietário");
+			assertThatThrownBy(() -> inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN)).isInstanceOf(
+					OwnerInviteNotAllowedException.class).hasMessageContaining("Não é possível usar OWNER via token!");
 		}
 
 		@Test
-		void whenUserAlreadyInTeam_returnsConflict() throws IOException {
+		void whenUserAlreadyInTeam_returnsConflict() {
 			TeamEntity t = new TeamEntity();
 			t.setId(TEAM_ID);
 			t.setName("Hydra FC");
@@ -600,11 +592,9 @@ class InviteServiceTest {
 			when(jwtService.parseInviteToken(INVITE_TOKEN)).thenReturn(inviteTokenDto());
 			when(teamMemberRepository.findByTeamIdAndUserId(TEAM_ID, ATHLETE_ID)).thenReturn(Optional.of(existing));
 
-			ResponseEntity<ResponseDto> response = inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN);
-
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-			assertNotNull(response.getBody());
-			assertThat(response.getBody().getMessage()).contains("já faz parte");
+			assertThatThrownBy(() -> inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN)).isInstanceOf(
+					UserAlreadyInTeamException.class).hasMessageContaining(
+					"Usuário já faz parte da equipe Hydra FC como Atleta!");
 		}
 
 		@Test
@@ -612,6 +602,7 @@ class InviteServiceTest {
 			mockCoachAuth();
 			when(jwtService.parseInviteToken(INVITE_TOKEN)).thenReturn(inviteTokenDto());
 			when(teamMemberRepository.findByTeamIdAndUserId(TEAM_ID, ATHLETE_ID)).thenReturn(Optional.empty());
+			when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(teamWithCoach()));
 			when(userRepository.findById(ATHLETE_ID)).thenReturn(Optional.empty());
 
 			assertThatThrownBy(() -> inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN)).isInstanceOf(
@@ -619,28 +610,31 @@ class InviteServiceTest {
 		}
 
 		@Test
-		void whenInvitedUserHasNoEmail_returnsBadRequest() throws IOException {
+		void whenInvitedUserHasNoEmail_returnsBadRequest() throws Exception {
 			UserEntity noEmail = athleteEntity();
 			noEmail.setEmail(null);
 
 			mockCoachAuth();
+
 			when(jwtService.parseInviteToken(INVITE_TOKEN)).thenReturn(inviteTokenDto());
 			when(teamMemberRepository.findByTeamIdAndUserId(TEAM_ID, ATHLETE_ID)).thenReturn(Optional.empty());
+			when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(teamWithCoach()));
 			when(userRepository.findById(ATHLETE_ID)).thenReturn(Optional.of(noEmail));
+			when(userRepository.findById(COACH_ID)).thenReturn(Optional.of(coachEntity()));
 
 			ResponseEntity<ResponseDto> response = inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN);
 
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 			assertNotNull(response.getBody());
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 			assertThat(response.getBody().getMessage()).isEqualTo("O usuário não possui um e-mail cadastrado!");
 		}
 
 		@Test
 		void whenTeamNotFound_throwsEntityNotFoundException() {
 			mockCoachAuth();
+
 			when(jwtService.parseInviteToken(INVITE_TOKEN)).thenReturn(inviteTokenDto());
 			when(teamMemberRepository.findByTeamIdAndUserId(TEAM_ID, ATHLETE_ID)).thenReturn(Optional.empty());
-			when(userRepository.findById(ATHLETE_ID)).thenReturn(Optional.of(athleteEntity()));
 			when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.empty());
 
 			assertThatThrownBy(() -> inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN)).isInstanceOf(
@@ -654,7 +648,7 @@ class InviteServiceTest {
 			when(teamMemberRepository.findByTeamIdAndUserId(TEAM_ID, ATHLETE_ID)).thenReturn(Optional.empty());
 			when(userRepository.findById(ATHLETE_ID)).thenReturn(Optional.of(athleteEntity()));
 			when(teamRepository.findById(TEAM_ID)).thenReturn(Optional.of(teamWithCoach()));
-			when(userRepository.findById(COACH_ID)).thenReturn(Optional.empty());
+			when(userRepository.findById(COACH_ID)).thenReturn(Optional.of(coachEntity())).thenReturn(Optional.empty());
 
 			assertThatThrownBy(() -> inviteService.sendInviteTokenByEmail(AUTH, INVITE_TOKEN)).isInstanceOf(
 					EntityNotFoundException.class).hasMessageContaining("Quem convidou não foi encontrado");
