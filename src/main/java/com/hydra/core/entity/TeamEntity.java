@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -40,7 +41,7 @@ public class TeamEntity {
 	private UserEntity createdBy;
 
 	@OneToMany(mappedBy = "team", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-	private List<TeamMemberEntity> members;
+	private List<TeamMemberEntity> members = new ArrayList<>();
 
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;

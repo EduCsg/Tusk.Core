@@ -63,14 +63,17 @@ public class WorkoutEntity {
 
 	@OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("orderIndex ASC")
+	@Builder.Default
 	private List<WorkoutExerciseEntity> exercises = new ArrayList<>();
 
 	@OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("orderIndex ASC")
+	@Builder.Default
 	private List<WorkoutRunningSegmentEntity> runningSegments = new ArrayList<>();
 
 	@OneToMany(mappedBy = "workout", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("orderIndex ASC")
+	@Builder.Default
 	private List<WorkoutSwimmingSetEntity> swimmingSets = new ArrayList<>();
 
 	@Column(name = "created_at", nullable = false, updatable = false)

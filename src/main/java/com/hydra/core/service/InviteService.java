@@ -29,10 +29,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class InviteService {
 
-	private static final String INVALID_TOKEN_MESSAGE = "Token inválido ou usuário não autorizado!";
-	private static final String USER_NOT_FOUND_MESSAGE = "Usuário não encontrado!";
-	private static final String TEAM_NOT_FOUND_MESSAGE = "Time não encontrado!";
-	private static final String INVALID_ROLE_MESSAGE = "Função inválida no convite!";
+	static final String INVALID_TOKEN_MESSAGE = "Token inválido ou usuário não autorizado!";
+	static final String USER_NOT_FOUND_MESSAGE = "Usuário não encontrado!";
+	static final String TEAM_NOT_FOUND_MESSAGE = "Time não encontrado!";
+	static final String INVALID_ROLE_MESSAGE = "Função inválida no convite!";
 
 	private final UserRepository userRepository;
 	private final TeamRepository teamRepository;
@@ -60,6 +60,7 @@ public class InviteService {
 		UserDto userByToken = jwtService.parseTokenToUser(token);
 
 		if (!userByToken.id().equals(request.coachId())) {
+			responseDto.setMessage("Você não pode aceitar o próprio convite!");
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseDto);
 		}
 
@@ -253,7 +254,7 @@ public class InviteService {
 		String inviteUrl = jwtService.generateTeamInviteUrl(inviteToken);
 
 		// Carrega e personaliza o template
-		String template = loadInviteTemplate();
+		String template = loadInviteTemplate("/templates/email-invite.html");
 
 		String html = template //
 							   .replace("{{teamImageUrl}}", team.getImageUrl()) //
@@ -271,9 +272,7 @@ public class InviteService {
 		return ResponseEntity.ok(responseDto);
 	}
 
-	private String loadInviteTemplate() throws IOException {
-		String templatePath = "/templates/email-invite.html";
-
+	String loadInviteTemplate(String templatePath) throws IOException {
 		try (InputStream is = getClass().getResourceAsStream(templatePath)) {
 			if (is == null) {
 				throw new IOException("Template não encontrado: " + templatePath);
